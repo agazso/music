@@ -39,7 +39,6 @@
   <Login />
 {:else}
   <Grid tiles={library.tiles} onpick={pick} activeId={player.song?.albumId} hidden={idle} />
-  <div class="title" class:hidden={idle}>{library.title}{#if library.tiles.length} · {library.tiles.length}{/if}{#if library.loading} …{/if}</div>
   <div class="hint" class:hidden={!hint}>
     {#each MODES as m, i}<span><b>{i + 1}</b> {m}</span>{/each}
     <span><b>space</b> play</span><span><b>← →</b> track</span><span><b>?</b> help</span>
@@ -48,12 +47,11 @@
 {/if}
 
 <style>
-  .title, .hint {
+  .hint {
     --s: clamp(0.85px, 100vw / 1600, 1.3px);
     position: fixed; left: calc(16 * var(--s)); color: #fff; font-size: calc(10 * var(--s)); letter-spacing: .15em; text-transform: uppercase;
     opacity: .3; transition: opacity 600ms; pointer-events: none;
   }
-  .title { top: calc(110 * var(--s)); }
   .hint { bottom: calc(110 * var(--s)); right: calc(16 * var(--s)); display: flex; gap: calc(14 * var(--s)); flex-wrap: wrap; }
   .hint b { opacity: 1; margin-right: 4px; }
   .hidden { opacity: 0; }

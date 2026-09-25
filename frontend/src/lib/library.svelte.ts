@@ -6,11 +6,11 @@ export type Tile = { id: string; cover: string; title: string; sub: string; kind
 export const MODES = ['albums', 'recent', 'random', 'starred', 'artists', 'playlists'] as const;
 export type Mode = (typeof MODES)[number];
 
-export const library = $state({ mode: 'albums' as Mode, tiles: [] as Tile[], title: '', loading: false });
+export const library = $state({ mode: 'albums' as Mode, tiles: [] as Tile[], loading: false });
 
 const album = (a: AlbumID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: a.artist ?? '', kind: 'album' });
-const artist = (a: ArtistID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: `${a.albumCount} albums`, kind: 'artist' });
-const playlist = (p: Playlist): Tile => ({ id: p.id, cover: coverUrl(p.coverArt ?? `pl-${p.id}`), title: p.name, sub: `${p.songCount} songs`, kind: 'playlist' });
+const artist = (a: ArtistID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: 'artist', kind: 'artist' });
+const playlist = (p: Playlist): Tile => ({ id: p.id, cover: coverUrl(p.coverArt ?? `pl-${p.id}`), title: p.name, sub: 'playlist', kind: 'playlist' });
 
 // subsonic-api resolves failed responses instead of throwing
 function ok<T extends { status: string }>(r: T): T {
@@ -34,7 +34,7 @@ async function allAlbums(type: 'alphabeticalByArtist' | 'newest', mine: number) 
 
 export async function setMode(mode: Mode) {
   const api = session.api!, mine = ++req;
-  library.mode = mode; library.title = mode; library.loading = true; library.tiles = [];
+  library.mode = mode; library.loading = true; library.tiles = [];
   try {
     switch (mode) {
       case 'albums': await allAlbums('alphabeticalByArtist', mine); break;
@@ -58,7 +58,6 @@ export async function pick(t: Tile) {
   else {
     const a = ok(await api.getArtist({ id: t.id })).artist;
     req++;
-    library.title = a.name;
     library.tiles = (a.album ?? []).map(album);
   }
 }

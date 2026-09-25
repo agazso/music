@@ -35,11 +35,10 @@
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
-  .time { opacity: .7; font-variant-numeric: tabular-nums; }
-  .ctl { display: flex; align-items: center; gap: calc(12 * var(--s)); flex-shrink: 0; }
-  /* phones: stack play/pause over the time and let title/artist take two lines */
+  .ctl { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; }
+  .time { opacity: .7; font-size: .7em; font-variant-numeric: tabular-nums; }
+  /* phones: let title/artist take two lines */
   @media (max-width: 700px) {
-    .ctl { flex-direction: column; gap: 0; }
     .meta { white-space: normal; display: flex; flex-direction: column; line-height: 1.2; }
     .meta b, .meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meta span { margin-left: 0; }
