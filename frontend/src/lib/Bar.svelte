@@ -1,13 +1,20 @@
 <script lang="ts">
   import { coverUrl } from './api.svelte';
   import { player, seek, toggle } from './player.svelte';
+  import Queue from './Queue.svelte';
   let { hidden }: { hidden: boolean } = $props();
+  // publish the bar height so the song list can pad for it
+  let barHeight = $state(0);
+  $effect(() => { document.documentElement.style.setProperty('--botbar', `${barHeight}px`); });
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 </script>
 
 {#if player.song}
-  <div class="bar" class:hidden>
-    <img src={coverUrl(player.song.coverArt, 96)} alt="" />
+  {#if player.queueOpen}<Queue onclose={() => (player.queueOpen = false)} />{/if}
+  <div class="bar" class:hidden={hidden && !player.queueOpen} bind:clientHeight={barHeight}>
+    <button class="cover" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
+      <img src={coverUrl(player.song.coverArt, 96)} alt="" />
+    </button>
     <span class="meta"><b>{player.song.title}</b> <span>{player.song.artist}</span></span>
     <span class="ctl">
       <button onclick={toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? '❚❚' : '▶'}</button>
@@ -29,8 +36,10 @@
     display: flex; align-items: center; gap: calc(12 * var(--s)); color: #eee; font-size: calc(20 * var(--s));
     background: rgba(0, 0, 0, 0.6); opacity: .95; transition: opacity 600ms; z-index: 2;
   }
-  .bar.hidden { opacity: 0; pointer-events: none; }
+  .bar.hidden:not(:hover) { opacity: 0; } /* stays visible while the mouse rests on it */
+  .cover { all: unset; cursor: pointer; display: flex; flex-shrink: 0; }
   .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; }
+  .cover:hover img { opacity: 1; }
   .meta { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }

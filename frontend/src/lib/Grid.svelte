@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Spring } from 'svelte/motion';
   import type { Tile } from './library.svelte';
+  import { player } from './player.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -34,7 +35,7 @@
   </div>
 </div>
 
-<div class="controls" class:hidden>
+<div class="controls" class:hidden={hidden || player.queueOpen || player.topHidden}>
   <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
   <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
   <label><input type="checkbox" bind:checked={art} /> with art</label>
@@ -85,7 +86,7 @@
     letter-spacing: .08em; text-transform: uppercase; opacity: .35; transition: opacity 600ms, background 300ms; z-index: 2;
   }
   .controls:hover { opacity: 1; background: rgba(0, 0, 0, 0.6); }
-  @media (hover: none) { .controls { opacity: 1; background: rgba(0, 0, 0, 0.6); } }
+  @media (hover: none) { .controls { opacity: 1; background: rgba(0, 0, 0, 0.6); } .controls.hidden { opacity: 0; pointer-events: none; } }
   .controls.hidden { opacity: 0; pointer-events: none; }
   .controls label { display: flex; align-items: center; gap: calc(16 * var(--s)); }
   /* same thin slider in every browser; Firefox's default range is large */

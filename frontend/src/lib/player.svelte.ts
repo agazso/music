@@ -2,7 +2,7 @@ import type { Child } from 'subsonic-api';
 import { coverUrl, session, streamUrl } from './api.svelte';
 
 export const player = $state({
-  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0,
+  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false,
   get song() { return this.queue[this.index] as Child | undefined; },
 });
 
@@ -44,6 +44,7 @@ function load() {
   }
 }
 
+export function jump(i: number) { if (i >= 0 && i < player.queue.length) { player.index = i; load(); } }
 export function toggle() { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
 export function next() { if (player.index < player.queue.length - 1) { player.index++; load(); } }
 export function prev() { if (audio.currentTime > 3 || player.index === 0) audio.currentTime = 0; else { player.index--; load(); } }

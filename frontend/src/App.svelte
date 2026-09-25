@@ -15,7 +15,7 @@
 
   // touch devices have no hover or mouse movement to wake the UI, so never fade it there
   const touch = matchMedia('(hover: none)').matches;
-  function wake() { idle = false; clearTimeout(idleTimer); if (!touch) idleTimer = setTimeout(() => (idle = true), 2500); }
+  function wake() { idle = false; player.topHidden = false; clearTimeout(idleTimer); if (!touch) idleTimer = setTimeout(() => (idle = true), 2500); }
 
   function onkeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT') return;
