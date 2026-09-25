@@ -10,7 +10,8 @@
   let cols = $state(Number(localStorage.getItem('grid.cols')) || 3);
   let gap = $state(Number(localStorage.getItem('grid.gap') ?? 48));
   let art = $state(localStorage.getItem('art') !== '0');
-  $effect(() => { localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap)); localStorage.setItem('art', art ? '1' : '0'); });
+  let motion = $state(localStorage.getItem('motion') === '1'); // off by default
+  $effect(() => { localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap)); localStorage.setItem('art', art ? '1' : '0'); localStorage.setItem('motion', motion ? '1' : '0'); });
   // Navidrome >= 0.64 omits coverArt when no image exists, so an empty cover URL means no art
   let shown = $derived(art ? tiles.filter((t) => t.cover) : tiles);
 
@@ -19,7 +20,7 @@
   // top bar visibility: 0 below the middle of the screen, rising to 1 at the top edge
   let near = $state(1);
   function onmove(e: PointerEvent) {
-    drift.target = { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 };
+    drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
     near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
   }
 </script>
@@ -42,6 +43,7 @@
   <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
   <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
   <label><input type="checkbox" bind:checked={art} /> with art</label>
+  <label><input type="checkbox" bind:checked={motion} /> motion</label>
 </div>
 
 <style>
