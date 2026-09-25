@@ -6,6 +6,7 @@
   import Bar from './lib/Bar.svelte';
   import Login from './lib/Login.svelte';
   import Grid from './lib/Grid.svelte';
+  import Visualizer from './lib/Visualizer.svelte';
 
   let ready = $state(false), idle = $state(false), hint = $state(true);
   let idleTimer: ReturnType<typeof setTimeout>;
@@ -18,7 +19,7 @@
   function wake() { idle = false; player.topHidden = false; clearTimeout(idleTimer); if (!touch) idleTimer = setTimeout(() => (idle = true), 2500); }
 
   function onkeydown(e: KeyboardEvent) {
-    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    if ((e.target as HTMLElement).tagName === 'INPUT' || player.visOpen) return; // the visualizer owns the keys while open
     const n = Number(e.key);
     if (n >= 1 && n <= MODES.length) setMode(MODES[n - 1]);
     else if (e.key === ' ') { e.preventDefault(); toggle(); }
@@ -44,6 +45,7 @@
     <span><b>space</b> play</span><span><b>← →</b> track</span><span><b>?</b> help</span>
   </div>
   <Bar hidden={idle} />
+  {#if player.visOpen}<Visualizer />{/if}
 {/if}
 
 <style>

@@ -16,6 +16,11 @@
       <img src={coverUrl(player.song.coverArt, 96)} alt="" />
     </button>
     <span class="meta"><b>{player.song.title}</b> <span>{player.song.artist}</span></span>
+    <button class="vis" onclick={() => (player.visOpen = true)} aria-label="Visualizer" title="Visualizer">
+      <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M3 12h2l2-6 3 12 3-9 2 6 2-3h4" />
+      </svg>
+    </button>
     <span class="ctl">
       <button onclick={toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? '❚❚' : '▶'}</button>
       <span class="time">{fmt(player.time)} / {fmt(player.duration)}</span>
@@ -44,6 +49,8 @@
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
+  .vis { all: unset; cursor: pointer; display: flex; padding: 4px 8px; opacity: .7; }
+  .vis:hover { opacity: 1; }
   .ctl { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; }
   .time { opacity: .7; font-size: .7em; font-variant-numeric: tabular-nums; }
   /* phones: let title/artist take two lines */

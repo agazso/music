@@ -2,7 +2,7 @@ import type { Child } from 'subsonic-api';
 import { coverUrl, session, streamUrl } from './api.svelte';
 
 export const player = $state({
-  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false,
+  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false, visOpen: false,
   get song() { return this.queue[this.index] as Child | undefined; },
 });
 
@@ -42,6 +42,21 @@ function load() {
       artwork: [{ src: coverUrl(s.coverArt, 512), sizes: '512x512' }],
     });
   }
+}
+
+// Web Audio graph for visualizers, created lazily on first use (a user gesture) so plain playback
+// never depends on it. crossOrigin on the element + Navidrome's wildcard CORS keep it from going silent.
+let graph: { ctx: AudioContext; node: GainNode } | null = null;
+export function audioGraph() {
+  if (!graph) {
+    const ctx = new AudioContext();
+    const node = ctx.createGain(); // element -> gain -> output; the gain is the tap point (and later ReplayGain)
+    ctx.createMediaElementSource(audio).connect(node);
+    node.connect(ctx.destination);
+    graph = { ctx, node };
+  }
+  graph.ctx.resume();
+  return graph;
 }
 
 export function jump(i: number) { if (i >= 0 && i < player.queue.length) { player.index = i; load(); } }
