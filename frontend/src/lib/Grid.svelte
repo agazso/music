@@ -16,8 +16,11 @@
 
   // subtle whole-grid drift with the mouse; native scroll does the rest
   const drift = new Spring({ x: 0, y: 0 }, { stiffness: 0.05, damping: 0.5 });
+  // top bar visibility: 0 below the middle of the screen, rising to 1 at the top edge
+  let near = $state(1);
   function onmove(e: PointerEvent) {
     drift.target = { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 };
+    near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
   }
 </script>
 
@@ -35,7 +38,7 @@
   </div>
 </div>
 
-<div class="controls" class:hidden={hidden || player.queueOpen || player.topHidden}>
+<div class="controls" class:hidden={hidden || player.queueOpen || player.topHidden} style:--near={near}>
   <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
   <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
   <label><input type="checkbox" bind:checked={art} /> with art</label>
@@ -82,8 +85,8 @@
     position: fixed; top: 0; left: 0; right: 0; box-sizing: border-box;
     display: flex; flex-wrap: wrap; justify-content: center; gap: calc(12 * var(--s)) calc(36 * var(--s));
     color: #fff; font-size: calc(24 * var(--s));
-    padding: calc(28 * var(--s)) calc(20 * var(--s)); background: #0000;
-    letter-spacing: .08em; text-transform: uppercase; opacity: .35; transition: opacity 600ms, background 300ms; z-index: 2;
+    padding: calc(28 * var(--s)) calc(20 * var(--s)); background: rgba(0, 0, 0, 0.6);
+    letter-spacing: .08em; text-transform: uppercase; opacity: var(--near, 1); transition: opacity 150ms; z-index: 2;
   }
   .controls:hover { opacity: 1; background: rgba(0, 0, 0, 0.6); }
   @media (hover: none) { .controls { opacity: 1; background: rgba(0, 0, 0, 0.6); } .controls.hidden { opacity: 0; pointer-events: none; } }
