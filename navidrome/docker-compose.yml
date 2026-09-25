@@ -1,0 +1,82 @@
+services:
+  navidrome:
+    image: deluan/navidrome:0.64.2
+    container_name: navidrome
+    user: "1000:1000"
+    ports:
+      - "4533:4533"
+    restart: unless-stopped
+    environment:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+    volumes:
+      - ./data:/data
+      - /home/attila/Music:/music:ro
+
+  ampcast:
+    image: ghcr.io/rekkyrosso/ampcast:latest
+    container_name: ampcast
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      ENABLED_SERVICES: "navidrome,lastfm,listenbrainz"
+      STARTUP_SERVICES: "navidrome"
+      # Browser-side URL: ampcast runs in the browser and talks to Navidrome directly.
+      NAVIDROME_HOST: "http://localhost:4533"
+    depends_on:
+      - navidrome
+
+  start:
+    image: nginx:alpine
+    container_name: music-start
+    ports:
+      - "8088:80"
+    restart: unless-stopped
+    volumes:
+      - ./start:/usr/share/nginx/html:ro
+
+  feishin:
+    image: ghcr.io/jeffvli/feishin:latest
+    container_name: feishin
+    ports:
+      - "9180:9180"
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: navidrome
+      SERVER_TYPE: navidrome
+      # Browser-side URL: Feishin runs in the browser and talks to Navidrome directly.
+      SERVER_URL: "http://localhost:4533"
+      ANALYTICS_DISABLED: "true"
+    depends_on:
+      - navidrome
+
+  aonsoku:
+    image: ghcr.io/victoralvesf/aonsoku:latest
+    container_name: aonsoku
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
+    environment:
+      # Browser-side URL: Aonsoku runs in the browser and talks to Navidrome directly.
+      SERVER_URL: "http://localhost:4533"
+      SERVER_TYPE: navidrome
+      HIDE_SERVER: "true"
+    depends_on:
+      - navidrome
+
+  airdrome:
+    image: h7p3ri0n/airdrome:latest
+    container_name: airdrome
+    ports:
+      - "8091:80"
+    restart: unless-stopped
+    environment:
+      # Browser-side URL: Airdrome runs in the browser and talks to Navidrome directly.
+      SERVER_URL: "http://localhost:4533"
+    volumes:
+      # Upstream index.html never loads env.js, so SERVER_URL is ignored; this copy adds the script tag.
+      - ./airdrome-index.html:/var/www/html/index.html:ro
+    depends_on:
+      - navidrome

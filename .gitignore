@@ -1,0 +1,4 @@
+# navidrome database, cache and artwork
+navidrome/data/
+# playwright screenshots from verification runs
+.playwright-mcp/

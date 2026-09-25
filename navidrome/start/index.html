@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 1.5rem;
+         background: #111; color: #eee; font: 1rem system-ui, sans-serif; padding: 1rem; }
+  h1 { margin: 0 0 .5rem; text-align: center; font-weight: 600; }
+  a { display: block; width: min(24rem, 90vw); padding: 2rem; border-radius: 1rem;
+      text-align: center; text-decoration: none; color: #fff; font-size: 1.75rem; font-weight: 700; }
+  a small { display: block; margin-top: .5rem; font-size: 1rem; font-weight: 400; opacity: .8; }
+  a:hover { filter: brightness(1.15); }
+  .navidrome { background: #1a73e8; }
+  .ampcast  { background: #7b2cbf; }
+  .feishin  { background: #2a9d8f; }
+  .aonsoku  { background: #e76f51; }
+  .airdrome { background: #c9a227; }
+</style>
+</head>
+<body>
+  <h1>Music</h1>
+  <a class="navidrome" href="http://localhost:4533/">Navidrome<small>built-in UI · admin</small></a>
+  <a class="ampcast" href="http://localhost:8000/">ampcast<small>player with Milkdrop visualizer</small></a>
+  <a class="feishin" href="http://localhost:9180/">Feishin<small>gapless player with lyrics</small></a>
+  <a class="aonsoku" href="http://localhost:8090/">Aonsoku<small>clean UI, synced lyrics, podcasts</small></a>
+  <a class="airdrome" href="http://localhost:8091/">Airdrome<small>gapless, ReplayGain, offline cache</small></a>
+</body>
+</html>
