@@ -3,7 +3,9 @@
 Electron shell that runs a bundled Navidrome in the background and shows the frontend in a
 maximized, frameless window. Nothing to configure: on first start it creates an admin account with a
 random password, points Navidrome at the user's Music folder (asks for one if it does not exist) and logs
-the frontend in silently. Navidrome listens on 127.0.0.1 on a free port and is not reachable from the network.
+the frontend in silently. Navidrome and a small static server for the frontend listen on all interfaces so
+phones on the LAN can open the share QR code; the only protection is the share account's password. Ports are
+chosen on first run and reused, so QR codes and bookmarks stay valid across restarts.
 
     pnpm install            # Electron + electron-builder
     pnpm navidrome          # downloads the navidrome binary for this platform into bin/
@@ -12,7 +14,7 @@ the frontend in silently. Navidrome listens on 127.0.0.1 on a free port and is n
     pnpm dist               # all of the above, then AppImage and .deb into release/
 
 Data lives in the app's user-data folder (`~/.config/Music/navidrome` on Linux): the database, cache and
-`credentials.json`. Delete that folder for a factory reset. `Ctrl+Q` quits.
+`credentials.json` (admin and share passwords, ports). Delete that folder for a factory reset. `Ctrl+Q` quits.
 
 Linux x86_64 only for now; other platforms need their own navidrome binary in `fetch-navidrome.mjs` and
 matching `build` targets in `package.json`.

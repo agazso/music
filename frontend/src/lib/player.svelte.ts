@@ -2,7 +2,7 @@ import type { Child } from 'subsonic-api';
 import { coverUrl, session, streamUrl } from './api.svelte';
 
 export const player = $state({
-  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false, visOpen: false,
+  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false, visOpen: false, shareOpen: false,
   get song() { return this.queue[this.index] as Child | undefined; },
 });
 

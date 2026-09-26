@@ -26,10 +26,19 @@ Click a cover to play the album or playlist; click an artist to see their albums
 
 ## Player
 
-The bottom bar shows the playing song with a seekable progress line. Clicking its cover slides up the song
-list of the current album; click a song to jump to it. Close it with the chevron at the top (keeps the top bar
+The bottom bar shows the playing song with a seekable progress line. The shuffle button next to play loads a
+fresh queue of 50 random songs. Clicking the cover slides up the song list of the current album; click a song
+to jump to it. Close it with the chevron at the top (keeps the top bar
 hidden until the next interaction) or by clicking the cover again. OS media keys work through MediaSession,
 and plays are scrobbled to Navidrome after half the track.
+
+## Sharing
+
+Admins see a share icon in the bottom bar. It opens an overlay with a QR code; a phone on the same network
+scans it and the app opens logged in as a separate non-admin `share` user (created on first use). The link
+carries the account in the URL fragment (`#u=share&p=…&s=<server>`), so anyone holding it keeps access until
+the share user's password is changed. Navidrome has no Subsonic endpoints for user management, so the share
+user is managed through Navidrome's native `/api/user` endpoint with a token from `/auth/login`.
 
 ## Visualizer
 

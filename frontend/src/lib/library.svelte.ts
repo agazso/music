@@ -1,5 +1,5 @@
 import type { AlbumID3, ArtistID3, Playlist } from 'subsonic-api';
-import { coverUrl, session } from './api.svelte';
+import { coverUrl, ok, session } from './api.svelte';
 import { play } from './player.svelte';
 
 export type Tile = { id: string; cover: string; title: string; sub: string; kind: 'album' | 'artist' | 'playlist' };
@@ -11,12 +11,6 @@ export const library = $state({ mode: 'albums' as Mode, tiles: [] as Tile[], loa
 const album = (a: AlbumID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: a.artist ?? '', kind: 'album' });
 const artist = (a: ArtistID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: 'artist', kind: 'artist' });
 const playlist = (p: Playlist): Tile => ({ id: p.id, cover: coverUrl(p.coverArt ?? `pl-${p.id}`), title: p.name, sub: 'playlist', kind: 'playlist' });
-
-// subsonic-api resolves failed responses instead of throwing
-function ok<T extends { status: string }>(r: T): T {
-  if (r.status === 'failed') throw new Error((r as { error?: { message: string } }).error?.message ?? 'request failed');
-  return r;
-}
 
 let req = 0; // ignore results from a superseded mode switch
 
