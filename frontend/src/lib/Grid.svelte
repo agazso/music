@@ -13,7 +13,15 @@
   let motion = $state(localStorage.getItem('motion') === '1'); // off by default
   $effect(() => { localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap)); localStorage.setItem('art', art ? '1' : '0'); localStorage.setItem('motion', motion ? '1' : '0'); });
   // Navidrome >= 0.64 omits coverArt when no image exists, so an empty cover URL means no art
-  let shown = $derived(art ? tiles.filter((t) => t.cover) : tiles);
+  // the playing album always shows, even without art, so it can be found and scrolled to
+  let shown = $derived(art ? tiles.filter((t) => t.cover || t.id === activeId) : tiles);
+
+  // when the playing album changes (random queue, next track), bring its cover into view
+  let scroller: HTMLDivElement;
+  $effect(() => {
+    if (!activeId) return;
+    requestAnimationFrame(() => scroller?.querySelector('.tile.active')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  });
 
   // subtle whole-grid drift with the mouse; native scroll does the rest
   const drift = new Spring({ x: 0, y: 0 }, { stiffness: 0.05, damping: 0.5 });
@@ -44,7 +52,7 @@
 
 <svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)} />
 
-<div class="scroll" {onscroll}>
+<div class="scroll" {onscroll} bind:this={scroller}>
   <div class="grid" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
     style:transform="translate3d({drift.current.x * -8}px, {drift.current.y * -6}px, 0)">
     {#each shown as t (t.id)}
