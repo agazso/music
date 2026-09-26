@@ -1,0 +1,48 @@
+{
+  "name": "music-desktop",
+  "productName": "Music",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Navidrome and the music frontend packaged as one desktop app",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "fetch": "node scripts/fetch-navidrome.mjs",
+    "build:frontend": "cd ../frontend && pnpm build --outDir ../desktop/dist --emptyOutDir",
+    "dev": "electron .",
+    "dist": "pnpm fetch && pnpm build:frontend && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "dev.musicapp.desktop",
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.cjs",
+      "dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "bin/navidrome",
+        "to": "navidrome"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "dist/favicon.svg",
+      "maintainer": "Attila Gazso <agazso@gmail.com>"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "homepage": "https://github.com/agazso/musicapp",
+  "author": "Attila Gazso <agazso@gmail.com>"
+}

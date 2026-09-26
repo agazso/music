@@ -32,9 +32,10 @@ async function allAlbums(type: 'alphabeticalByArtist' | 'newest', mine: number) 
   }
 }
 
-export async function setMode(mode: Mode) {
+export async function setMode(mode: Mode, refresh = false) {
   const api = session.api!, mine = ++req;
-  library.mode = mode; library.loading = true; library.tiles = [];
+  library.mode = mode; library.loading = true;
+  if (!refresh) library.tiles = [];
   try {
     switch (mode) {
       case 'albums': await allAlbums('alphabeticalByArtist', mine); break;
@@ -49,6 +50,8 @@ export async function setMode(mode: Mode) {
       case 'playlists': library.tiles = (ok(await api.getPlaylists()).playlists.playlist ?? []).map(playlist); break;
     }
   } finally { if (mine === req) library.loading = false; }
+  // while a scan is running (first start, new files) keep refreshing so albums appear as they are found
+  if (mine === req && ok(await api.getScanStatus()).scanStatus.scanning) setTimeout(() => { if (mine === req) setMode(mode, true); }, 5000);
 }
 
 export async function pick(t: Tile) {

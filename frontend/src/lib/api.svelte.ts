@@ -21,7 +21,8 @@ export async function login(c: Creds) {
 export function logout() { localStorage.removeItem('creds'); session.api = null; }
 
 export function restore() {
-  const raw = localStorage.getItem('creds');
+  // the desktop app injects its local server and account; otherwise use what the user typed last time
+  const raw = window.desktop ? JSON.stringify(window.desktop) : localStorage.getItem('creds');
   return raw ? login(JSON.parse(raw)).catch(logout) : Promise.resolve();
 }
 
