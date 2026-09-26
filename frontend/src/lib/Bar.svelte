@@ -69,9 +69,10 @@
   .cover { all: unset; cursor: pointer; display: flex; flex-shrink: 0; }
   .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; }
   .cover:hover img { opacity: 1; }
-  .meta { all: unset; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
-  button.meta { cursor: pointer; }
-  button.meta:hover b { text-decoration: underline; text-underline-offset: 3px; }
+  /* .bar .meta outranks the generic .bar button reset below, so the title keeps filling the middle */
+  .bar .meta { all: unset; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: calc(20 * var(--s)); }
+  .bar button.meta { cursor: pointer; padding: 0; opacity: 1; }
+  .bar button.meta:hover b { text-decoration: underline; text-underline-offset: 3px; }
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
