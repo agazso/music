@@ -20,7 +20,9 @@
       <button class="cover" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
         <img src={coverUrl(player.song.coverArt, 96)} alt="" />
       </button>
-      <span class="meta"><b>{player.song.title}</b> <span>{player.song.artist}</span></span>
+      <button class="meta" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
+        <b>{player.song.title}</b> <span>{player.song.artist}</span>
+      </button>
     {:else}
       <span class="meta"></span>
     {/if}
@@ -67,7 +69,9 @@
   .cover { all: unset; cursor: pointer; display: flex; flex-shrink: 0; }
   .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; }
   .cover:hover img { opacity: 1; }
-  .meta { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta { all: unset; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  button.meta { cursor: pointer; }
+  button.meta:hover b { text-decoration: underline; text-underline-offset: 3px; }
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
