@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Menu, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, net } from 'electron';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -76,7 +76,8 @@ app.whenReady().then(async () => {
   const music = await musicDir();
   if (!music) return;
   const st = await state(dataDir);
-  const local = `http://127.0.0.1:${st.port}`, ip = lanIp();
+  const local = `http://127.0.0.1:${st.port}`;
+  ipcMain.handle('lan-ip', () => lanIp()); // looked up when the share overlay opens, so a network change needs no restart
 
   navidrome = spawn(navidromeBin, [], {
     stdio: 'inherit',
@@ -93,7 +94,7 @@ app.whenReady().then(async () => {
 
   const desktop = {
     url: local, username: st.username, password: st.password,
-    share: { url: `http://${ip}:${st.webPort}/`, server: `http://${ip}:${st.port}`, password: st.sharePassword },
+    share: { webPort: st.webPort, port: st.port, password: st.sharePassword },
   };
   const win = new BrowserWindow({
     frame: false, show: false, backgroundColor: '#000',

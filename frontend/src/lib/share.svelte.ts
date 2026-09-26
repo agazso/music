@@ -26,7 +26,8 @@ export async function shareLink() {
   else if (fresh || d) await nd(`/user/${existing.id}`, { method: 'PUT', body: JSON.stringify({ ...existing, password }) });
   localStorage.setItem('share.password', password);
 
-  const page = d?.url ?? location.origin + location.pathname;
-  const server = d?.server ?? base;
+  const ip = d ? await window.desktop!.lanIp() : '';
+  const page = d ? `http://${ip}:${d.webPort}/` : location.origin + location.pathname;
+  const server = d ? `http://${ip}:${d.port}` : base;
   return `${page}#u=${USER}&p=${encodeURIComponent(password)}&s=${encodeURIComponent(server)}`;
 }
