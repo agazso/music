@@ -5,30 +5,32 @@
   let canvas: HTMLCanvasElement;
   let host: HTMLDivElement;
   let error = $state('');
-  let name = $state('');       // preset name, shown briefly on change
+  let name = $state('');       // preset name, shown briefly after a key press (not on automatic changes)
   let cycling = $state(true);  // R toggles, Scroll Lock locks
   let vis: import('butterchurn').Visualizer | undefined;
   let names: string[] = [], presets: Record<string, object> = {};
   const history: string[] = [];
   let nameTimer = 0, cycleTimer = 0;
 
-  function show(n: string, blend: number) {
+  function flash(n: string) { name = n; clearTimeout(nameTimer); nameTimer = window.setTimeout(() => (name = ''), 3000); }
+  function show(n: string, blend: number, announce = false) {
     vis?.loadPreset(presets[n], blend);
-    name = n; clearTimeout(nameTimer); nameTimer = window.setTimeout(() => (name = ''), 3000);
+    if (announce) flash(n);
   }
-  function next(blend: number) {
+  function next(blend: number, announce = false) {
     const n = names[Math.floor(Math.random() * names.length)];
-    history.push(n); show(n, blend);
+    history.push(n); show(n, blend, announce);
   }
-  function prev() { history.pop(); const n = history[history.length - 1]; if (n) show(n, 0); }
+  function prev() { history.pop(); const n = history[history.length - 1]; if (n) show(n, 0, true); }
   function setCycling(on: boolean) {
     cycling = on; clearInterval(cycleTimer);
     if (on) cycleTimer = window.setInterval(() => next(2.7), 15000);
+    const n = history[history.length - 1]; if (n) flash(n); // show the lock state next to the name
   }
   // Milkdrop keys: Space next (blend), H hard cut, Backspace previous, R toggle cycling, Scroll Lock lock, T song title
   function onkeydown(e: KeyboardEvent) {
-    if (e.key === ' ') next(2.7);
-    else if (e.key === 'h' || e.key === 'H') next(0);
+    if (e.key === ' ') next(2.7, true);
+    else if (e.key === 'h' || e.key === 'H') next(0, true);
     else if (e.key === 'Backspace') prev();
     else if (e.key === 'r' || e.key === 'R') setCycling(!cycling);
     else if (e.key === 'ScrollLock') setCycling(!cycling);

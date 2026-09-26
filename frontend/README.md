@@ -34,7 +34,7 @@ and plays are scrobbled to Navidrome after half the track.
 ## Visualizer
 
 The waveform icon in the bottom bar opens a full-screen Milkdrop visualizer (Butterchurn). Presets cycle
-automatically every 15 seconds; the preset name flashes bottom-left on every change. Closing: `Esc`, a click,
+automatically every 15 seconds; every key press below flashes the preset name bottom-left, automatic changes do not. Closing: `Esc`, a click,
 or leaving full screen. While it is open it owns the keyboard, so `space` does not pause playback there.
 
 | Key | Action |
