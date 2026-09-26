@@ -42,6 +42,8 @@
     background: rgba(0, 0, 0, 0.6); opacity: .95; transition: opacity 600ms; z-index: 2;
   }
   .bar.hidden:not(:hover) { opacity: 0; } /* stays visible while the mouse rests on it */
+  /* touch devices: always show the bar while a song is loaded */
+  @media (hover: none), (pointer: coarse) { .bar.hidden:not(:hover) { opacity: .95; } }
   .cover { all: unset; cursor: pointer; display: flex; flex-shrink: 0; }
   .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; }
   .cover:hover img { opacity: 1; }

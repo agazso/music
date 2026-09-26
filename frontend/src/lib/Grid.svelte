@@ -17,17 +17,29 @@
 
   // subtle whole-grid drift with the mouse; native scroll does the rest
   const drift = new Spring({ x: 0, y: 0 }, { stiffness: 0.05, damping: 0.5 });
-  // top bar visibility: 0 below the middle of the screen, rising to 1 at the top edge
-  let near = $state(1);
+  // top bar visibility. Mouse: 0 below the middle of the screen, 1 at the top edge.
+  // Touch: hidden by default; scrolling up fades it in, scrolling down fades it out.
+  // media query first; a real touch event also switches to touch mode in case the query misreports
+  const touchAtLoad = matchMedia('(hover: none), (pointer: coarse)').matches;
+  let touch = $state(touchAtLoad);
+  let near = $state(touchAtLoad ? 0 : 1);
+  let lastTop = 0;
+  function ontouchstart() { if (!touch) { touch = true; near = 0; } }
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
-    near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
+    if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
+  }
+  function onscroll(e: Event) {
+    if (!touch) return;
+    const top = (e.currentTarget as HTMLElement).scrollTop;
+    if (Math.abs(top - lastTop) > 4) near = top < lastTop ? 1 : 0;
+    lastTop = top;
   }
 </script>
 
-<svelte:window onpointermove={onmove} />
+<svelte:window onpointermove={onmove} {ontouchstart} />
 
-<div class="scroll">
+<div class="scroll" {onscroll}>
   <div class="grid" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
     style:transform="translate3d({drift.current.x * -8}px, {drift.current.y * -6}px, 0)">
     {#each shown as t (t.id)}
@@ -39,7 +51,7 @@
   </div>
 </div>
 
-<div class="controls" class:hidden={hidden || player.queueOpen || player.topHidden} style:--near={near}>
+<div class="controls" class:hidden={hidden || player.queueOpen || (!touch && player.topHidden)} style:--near={near} style:pointer-events={near > 0.05 ? "auto" : "none"}>
   <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
   <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
   <label><input type="checkbox" bind:checked={art} /> with art</label>

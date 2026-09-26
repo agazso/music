@@ -8,14 +8,14 @@
   import Grid from './lib/Grid.svelte';
   import Visualizer from './lib/Visualizer.svelte';
 
-  let ready = $state(false), idle = $state(false), hint = $state(true);
+  let ready = $state(false), idle = $state(false), hint = $state(false);
   let idleTimer: ReturnType<typeof setTimeout>;
 
-  onMount(() => { restore().finally(() => (ready = true)); setTimeout(() => (hint = false), 6000); });
+  onMount(() => { restore().finally(() => (ready = true)); });
   $effect(() => { if (session.api) setMode('albums'); });
 
   // touch devices have no hover or mouse movement to wake the UI, so never fade it there
-  const touch = matchMedia('(hover: none)').matches;
+  const touch = matchMedia('(hover: none), (pointer: coarse)').matches;
   function wake() { idle = false; player.topHidden = false; clearTimeout(idleTimer); if (!touch) idleTimer = setTimeout(() => (idle = true), 2500); }
 
   function onkeydown(e: KeyboardEvent) {
@@ -51,10 +51,12 @@
 <style>
   .hint {
     --s: clamp(0.85px, 100vw / 1600, 1.3px);
-    position: fixed; left: calc(16 * var(--s)); color: #fff; font-size: calc(10 * var(--s)); letter-spacing: .15em; text-transform: uppercase;
-    opacity: .3; transition: opacity 600ms; pointer-events: none;
+    position: fixed; left: 50%; bottom: calc(130 * var(--s)); transform: translateX(-50%);
+    display: flex; justify-content: center; gap: calc(12 * var(--s)) calc(28 * var(--s)); flex-wrap: wrap; max-width: 90vw;
+    padding: calc(16 * var(--s)) calc(24 * var(--s)); border-radius: 4px; background: rgba(0, 0, 0, 0.7);
+    color: #fff; font-size: calc(18 * var(--s)); letter-spacing: .12em; text-transform: uppercase;
+    opacity: .95; transition: opacity 600ms; pointer-events: none;
   }
-  .hint { bottom: calc(110 * var(--s)); right: calc(16 * var(--s)); display: flex; gap: calc(14 * var(--s)); flex-wrap: wrap; }
-  .hint b { opacity: 1; margin-right: 4px; }
+  .hint b { font-weight: 600; margin-right: 6px; }
   .hidden { opacity: 0; }
 </style>

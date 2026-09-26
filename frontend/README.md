@@ -20,7 +20,7 @@ and gap; "with art" hides items without cover art. All three are remembered.
 | `space` | play / pause |
 | `←` `→` | previous / next track |
 | `Esc` | reload the current view |
-| `?` | toggle the key hint |
+| `?` | show / hide this key list |
 
 Click a cover to play the album or playlist; click an artist to see their albums.
 
