@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       electron:
-        specifier: ^44.4.5
+        specifier: 44.4.5
         version: 44.4.5
       electron-builder:
         specifier: ^26.15.3
