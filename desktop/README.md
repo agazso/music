@@ -6,7 +6,7 @@ random password, points Navidrome at the user's Music folder (asks for one if it
 the frontend in silently. Navidrome listens on 127.0.0.1 on a free port and is not reachable from the network.
 
     pnpm install            # Electron + electron-builder
-    pnpm fetch              # downloads the navidrome linux amd64 binary into bin/
+    pnpm navidrome          # downloads the navidrome binary for this platform into bin/
     pnpm build:frontend     # builds ../frontend into dist/
     pnpm dev                # runs the app from source
     pnpm dist               # all of the above, then AppImage and .deb into release/
@@ -22,7 +22,7 @@ matching `build` targets in `package.json`.
 Built on a GitHub Actions Apple Silicon runner by `.github/workflows/mac.yml` (run it manually from the
 Actions tab, or push a `v*` tag). It produces an unsigned, ad-hoc-signed `Music-<version>-arm64.dmg`
 as a workflow artifact. On a Mac with the tooling installed, `pnpm dist:mac` does the same locally.
-Intel Macs need `--x64` and the `darwin_amd64` navidrome binary (`ND_ARCH=amd64 pnpm fetch`).
+Intel Macs need `--x64` and the `darwin_amd64` navidrome binary (`ND_ARCH=amd64 pnpm navidrome`).
 
 Opening an unsigned app, once per install, no admin tricks needed:
 

@@ -7,11 +7,13 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "fetch": "node scripts/fetch-navidrome.mjs",
+    "navidrome": "node scripts/fetch-navidrome.mjs",
     "build:frontend": "cd ../frontend && pnpm build --outDir ../desktop/dist --emptyOutDir",
     "dev": "electron .",
-    "dist": "pnpm fetch && pnpm build:frontend && electron-builder --linux",
-    "dist:mac": "pnpm fetch && pnpm build:frontend && electron-builder --mac --arm64"
+    "dist": "pnpm navidrome && pnpm build:frontend && electron-builder --linux --publish never",
+    "dist:mac": "pnpm navidrome && pnpm build:frontend && electron-builder --mac --arm64 --publish never",
+    "pack:mac:dir": "electron-builder --mac --arm64 --dir --publish never",
+    "pack:mac": "electron-builder --mac dmg zip --arm64 --prepackaged release/mac-arm64/Music.app --publish never"
   },
   "devDependencies": {
     "electron": "44.4.5",
