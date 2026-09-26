@@ -10,7 +10,8 @@
     "fetch": "node scripts/fetch-navidrome.mjs",
     "build:frontend": "cd ../frontend && pnpm build --outDir ../desktop/dist --emptyOutDir",
     "dev": "electron .",
-    "dist": "pnpm fetch && pnpm build:frontend && electron-builder --linux"
+    "dist": "pnpm fetch && pnpm build:frontend && electron-builder --linux",
+    "dist:mac": "pnpm fetch && pnpm build:frontend && electron-builder --mac --arm64"
   },
   "devDependencies": {
     "electron": "^44.4.5",
@@ -36,11 +37,35 @@
         "deb"
       ],
       "category": "AudioVideo",
-      "icon": "dist/favicon.svg",
+      "icon": "build/icon.png",
       "maintainer": "Attila Gazso <agazso@gmail.com>"
     },
     "directories": {
       "output": "release"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.music",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   },
   "homepage": "https://github.com/agazso/musicapp",

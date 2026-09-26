@@ -16,3 +16,21 @@ Data lives in the app's user-data folder (`~/.config/Music/navidrome` on Linux):
 
 Linux x86_64 only for now; other platforms need their own navidrome binary in `fetch-navidrome.mjs` and
 matching `build` targets in `package.json`.
+
+## macOS
+
+Built on a GitHub Actions Apple Silicon runner by `.github/workflows/mac.yml` (run it manually from the
+Actions tab, or push a `v*` tag). It produces an unsigned, ad-hoc-signed `Music-<version>-arm64.dmg`
+as a workflow artifact. On a Mac with the tooling installed, `pnpm dist:mac` does the same locally.
+Intel Macs need `--x64` and the `darwin_amd64` navidrome binary (`ND_ARCH=amd64 pnpm fetch`).
+
+Opening an unsigned app, once per install, no admin tricks needed:
+
+- **macOS 14 and earlier:** right-click `Music.app`, choose *Open*, confirm.
+- **macOS 15 Sequoia:** double-click, dismiss the "Apple could not verify" dialog, open
+  *System Settings → Privacy & Security*, scroll down to the note about Music being blocked, click
+  *Open Anyway*, confirm with your password.
+
+Signing and notarization need an Apple Developer account ($99/year); with a Developer ID certificate and an
+App Store Connect API key added as repository secrets, electron-builder handles both in the same workflow
+and the steps above go away.

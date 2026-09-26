@@ -1,0 +1,33 @@
+name: mac
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+jobs:
+  build:
+    runs-on: macos-14   # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: '**/pnpm-lock.yaml' }
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm install --frozen-lockfile
+        working-directory: desktop
+      - run: pnpm fetch && pnpm build:frontend
+        working-directory: desktop
+      # unsigned build: assemble the app, ad-hoc sign it (required on Apple Silicon), then package dmg + zip
+      - run: |
+          npx electron-builder --mac --arm64 --dir
+          codesign --force --deep --sign - "release/mac-arm64/Music.app"
+          npx electron-builder --mac dmg zip --arm64 --prepackaged release/mac-arm64/Music.app
+        working-directory: desktop
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Music-mac-arm64
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip

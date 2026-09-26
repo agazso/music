@@ -1,15 +1,17 @@
-// downloads the navidrome binary that gets bundled next to the app
+// downloads the navidrome binary that gets bundled next to the app, for the platform being built
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const VERSION = '0.64.2';
+const os = { linux: 'linux', darwin: 'darwin', win32: 'windows' }[process.env.ND_OS ?? process.platform];
+const arch = { x64: 'amd64', arm64: 'arm64' }[process.env.ND_ARCH ?? process.arch];
 const here = path.dirname(new URL(import.meta.url).pathname);
 const bin = path.join(here, '..', 'bin');
 const out = path.join(bin, 'navidrome');
 if (existsSync(out)) { console.log('navidrome already present'); process.exit(0); }
 mkdirSync(bin, { recursive: true });
-const url = `https://github.com/navidrome/navidrome/releases/download/v${VERSION}/navidrome_${VERSION}_linux_amd64.tar.gz`;
+const url = `https://github.com/navidrome/navidrome/releases/download/v${VERSION}/navidrome_${VERSION}_${os}_${arch}.tar.gz`;
 console.log('downloading', url);
 execFileSync('curl', ['-sSL', '-o', path.join(bin, 'nd.tgz'), url], { stdio: 'inherit' });
 execFileSync('tar', ['-xzf', path.join(bin, 'nd.tgz'), '-C', bin, 'navidrome'], { stdio: 'inherit' });
