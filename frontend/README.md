@@ -24,6 +24,13 @@ and gap; "with art" hides items without cover art. All three are remembered.
 
 Click a cover to play the album or playlist; click an artist to see their albums.
 
+## Phones
+
+Mobile browsers keep their own address bar and toolbar around the page. For a full-screen app, add it to the
+home screen: Safari *Share → Add to Home Screen*, Android Chrome or Firefox *menu → Add to Home screen /
+Install*. The manifest makes it launch standalone with a black status bar and the app icon. A share link
+opened this way keeps its login.
+
 ## Player
 
 The bottom bar shows the playing song with a seekable progress line. The shuffle button next to play loads a
