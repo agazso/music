@@ -92,6 +92,11 @@
     .meta b, .meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meta span { margin-left: 0; }
   }
-  .progress { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #ffffff0a; cursor: pointer; }
-  .progress i { display: block; height: 100%; background: #fff5; }
+  /* the seek line is 2px, but the hit area is 18px tall straddling the bar's top edge (touch and mouse slop);
+     hovering thickens the line */
+  .progress { --h: 2px; position: absolute; left: 0; right: 0; top: -9px; height: 18px; cursor: pointer; z-index: 1; }
+  .progress::before { content: ''; position: absolute; left: 0; right: 0; top: 9px; height: var(--h); background: #ffffff0a; transition: height 120ms; }
+  .progress i { position: absolute; left: 0; top: 9px; height: var(--h); background: #fff5; transition: height 120ms, background 120ms; }
+  .progress:hover { --h: 6px; }
+  .progress:hover i { background: #fff9; }
 </style>
