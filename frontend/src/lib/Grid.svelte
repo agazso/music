@@ -25,6 +25,8 @@
   let near = $state(touchAtLoad ? 0 : 1);
   let lastTop = 0;
   function ontouchstart() { if (!touch) { touch = true; near = 0; } }
+  // hidden while idle, while the song list is open, or after closing it with the handle (mouse only)
+  let barShown = $derived(!(hidden || player.queueOpen || (!touch && player.topHidden)));
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
     if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
@@ -51,7 +53,7 @@
   </div>
 </div>
 
-<div class="controls" class:hidden={hidden || player.queueOpen || (!touch && player.topHidden)} style:--near={near} style:pointer-events={near > 0.05 ? "auto" : "none"}>
+<div class="controls" class:hidden={!barShown} style:--near={near} style:pointer-events={barShown && near > 0.05 ? 'auto' : 'none'}>
   <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
   <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
   <label><input type="checkbox" bind:checked={art} /> with art</label>
