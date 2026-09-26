@@ -17,14 +17,13 @@
   {#if player.shareOpen}<Share onclose={() => (player.shareOpen = false)} />{/if}
   <div class="bar" class:hidden={hidden && !player.queueOpen && !player.shareOpen} bind:clientHeight={barHeight}>
     {#if player.song}
-      <button class="cover" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
+      <!-- cover + title + artist: one control that opens the song list -->
+      <button class="left" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
         <img src={coverUrl(player.song.coverArt, 96)} alt="" />
-      </button>
-      <button class="meta" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
-        <b>{player.song.title}</b> <span>{player.song.artist}</span>
+        <span class="meta"><b>{player.song.title}</b> <span>{player.song.artist}</span></span>
       </button>
     {:else}
-      <span class="meta"></span>
+      <span class="left"></span>
     {/if}
     {#if session.admin}
       <button class="vis" onclick={() => (player.shareOpen = !player.shareOpen)} aria-label="Share" title="Share" aria-expanded={player.shareOpen}>
@@ -66,13 +65,17 @@
     background: rgba(0, 0, 0, 0.6); opacity: .95; transition: opacity 600ms; z-index: 2;
   }
   .bar.hidden:not(:hover) { opacity: 0; pointer-events: none; } /* stays visible while the mouse rests on it */
-  .cover { all: unset; cursor: pointer; display: flex; flex-shrink: 0; }
-  .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; }
-  .cover:hover img { opacity: 1; }
-  /* .bar .meta outranks the generic .bar button reset below, so the title keeps filling the middle */
-  .bar .meta { all: unset; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: calc(20 * var(--s)); }
-  .bar button.meta { cursor: pointer; padding: 0; opacity: 1; }
-  .bar button.meta:hover b { text-decoration: underline; text-underline-offset: 3px; }
+  /* .bar .left outranks the generic .bar button reset below, so it keeps filling the middle */
+  .bar .left {
+    all: unset; flex: 1; min-width: 0; display: flex; align-items: center; gap: calc(12 * var(--s));
+    align-self: stretch; padding: 0 calc(8 * var(--s)); margin-left: calc(-8 * var(--s)); border-radius: 3px;
+    font-size: calc(20 * var(--s)); transition: background 150ms, opacity 100ms;
+  }
+  .bar button.left { cursor: pointer; }
+  .bar button.left:hover { background: rgba(255, 255, 255, 0.06); }
+  .bar button.left:active { background: rgba(255, 255, 255, 0.03); opacity: .8; }
+  .bar img { width: calc(56 * var(--s)); height: calc(56 * var(--s)); object-fit: cover; opacity: .95; flex-shrink: 0; }
+  .meta { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .meta b { font-weight: 500; color: #fff; }
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
