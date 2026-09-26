@@ -14,9 +14,8 @@
   onMount(() => { restore().finally(() => (ready = true)); });
   $effect(() => { if (session.api) setMode('albums'); });
 
-  // touch devices have no hover or mouse movement to wake the UI, so never fade it there
-  const touch = matchMedia('(hover: none), (pointer: coarse)').matches;
-  function wake() { idle = false; player.topHidden = false; clearTimeout(idleTimer); if (!touch) idleTimer = setTimeout(() => (idle = true), 2500); }
+  // any pointer activity (mouse move, tap, touch scroll) shows the bars; they fade again after a pause
+  function wake() { idle = false; player.topHidden = false; clearTimeout(idleTimer); idleTimer = setTimeout(() => (idle = true), 2500); }
 
   function onkeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT' || player.visOpen) return; // the visualizer owns the keys while open

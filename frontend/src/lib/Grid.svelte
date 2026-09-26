@@ -25,6 +25,9 @@
   let near = $state(touchAtLoad ? 0 : 1);
   let lastTop = 0;
   function ontouchstart() { if (!touch) { touch = true; near = 0; } }
+  // on touch, a tap while the bars are hidden only brings them back; it must not start a song
+  let wasHidden = false;
+  function pick(t: Tile) { if (touch && wasHidden) return; onpick(t); }
   // hidden while idle, while the song list is open, or after closing it with the handle (mouse only)
   let barShown = $derived(!(hidden || player.queueOpen || (!touch && player.topHidden)));
   function onmove(e: PointerEvent) {
@@ -39,13 +42,13 @@
   }
 </script>
 
-<svelte:window onpointermove={onmove} {ontouchstart} />
+<svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)} />
 
 <div class="scroll" {onscroll}>
   <div class="grid" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
     style:transform="translate3d({drift.current.x * -8}px, {drift.current.y * -6}px, 0)">
     {#each shown as t (t.id)}
-      <button class="tile" class:active={t.id === activeId} onclick={() => onpick(t)} title="{t.title} — {t.sub}">
+      <button class="tile" class:active={t.id === activeId} onclick={() => pick(t)} title="{t.title} — {t.sub}">
         <img src={t.cover} alt={t.title} loading="lazy" draggable="false" />
         <i></i>
       </button>
