@@ -11,8 +11,9 @@ Log in with your Navidrome URL (default http://localhost:4533), username and pas
 ## Browsing
 
 Full-width grid of covers styled as glossy vinyl-paper sleeves, over a black vinyl surface that scrolls with
-the cards. The top bar fades in as the mouse approaches the top of the window. Its sliders set columns (1–10)
-and gap; "with art" hides items without cover art. All three are remembered.
+the cards. The top bar fades in as the mouse approaches the top of the window. The menu in its corner switches
+between two control sets: *Layout* (columns 1–10, gap, "with art" to hide items without cover art, "motion")
+and *Look* (background material: vinyl, speaker grille, speaker cone, fabric). Everything is remembered.
 
 | Key | Action |
 |---|---|
