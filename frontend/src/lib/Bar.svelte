@@ -14,8 +14,8 @@
 
 {#if session.api}
   {#if player.queueOpen}<Queue onclose={() => (player.queueOpen = false)} />{/if}
-  {#if player.shareOpen}<Share onclose={() => (player.shareOpen = false)} />{/if}
-  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.shareOpen} bind:clientHeight={barHeight}>
+  {#if player.shareOpen}<Share from={player.shareFrom} onclose={() => (player.shareOpen = false)} />{/if}
+  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.shareOpen} class:lit={player.queueOpen || player.shareOpen} bind:clientHeight={barHeight}>
     {#if player.song}
       <!-- cover + title + artist: one control that opens the song list -->
       <button class="left" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
@@ -26,7 +26,7 @@
       <span class="left"></span>
     {/if}
     {#if session.admin}
-      <button class="vis" onclick={() => (player.shareOpen = !player.shareOpen)} aria-label="Share" title="Share" aria-expanded={player.shareOpen}>
+      <button class="vis" onclick={() => { player.shareFrom = 'bottom'; player.shareOpen = !player.shareOpen; }} aria-label="Share" title="Share" aria-expanded={player.shareOpen}>
         <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
         </svg>
@@ -62,8 +62,9 @@
     position: fixed; left: 0; right: 0; bottom: 0; height: calc(96 * var(--s)); padding: 0 calc(16 * var(--s));
     padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex; align-items: center; gap: calc(12 * var(--s)); color: #eee; font-size: calc(20 * var(--s));
-    background: rgba(0, 0, 0, 0.6); opacity: .95; transition: opacity 600ms; z-index: 2;
+    background: rgba(0, 0, 0, 0.6); transition: opacity 600ms, background 200ms; z-index: 2; /* same tone as top bar and side panel */
   }
+  .bar:hover, .bar.lit { background: rgba(0, 0, 0, 0.78); } /* darker while hovered or an overlay is open, like the panels */
   .bar.hidden:not(:hover) { opacity: 0; pointer-events: none; } /* stays visible while the mouse rests on it */
   /* .bar .left outranks the generic .bar button reset below, so it keeps filling the middle */
   .bar .left {

@@ -2,6 +2,7 @@
   import { Spring } from 'svelte/motion';
   import type { Tile } from './library.svelte';
   import { player } from './player.svelte';
+  import { session } from './api.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -16,7 +17,6 @@
   const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', cone: 'Cone', fabric: 'Fabric' } as const;
   let set = $state((localStorage.getItem('set') as keyof typeof SETS) || 'layout');
   let material = $state((localStorage.getItem('material') as keyof typeof MATERIALS) || 'vinyl');
-  let menu = $state(false);
   $effect(() => {
     localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap));
     localStorage.setItem('art', art ? '1' : '0'); localStorage.setItem('motion', motion ? '1' : '0');
@@ -47,9 +47,31 @@
   let wasHidden = false;
   function pick(t: Tile) { if (touch && wasHidden) return; onpick(t); }
   // hidden while idle, while the song list is open, or after closing it with the handle (mouse only)
-  let barShown = $derived(!(hidden || player.queueOpen || (!touch && player.topHidden)));
+  let shareRight = $derived(player.shareOpen && player.shareFrom === 'right');
+  // top bar and side panel are one piece of chrome: same opacity, and hovering either lights both
+  let overChrome = $state(false), hoverOpen = $state(false), menu = $state(false);
+  let panelOpen = $derived(menu || hoverOpen || shareRight);
+  // never fade while the pointer rests on the top bar or side panel, or while the panel is open
+  let barShown = $derived(shareRight || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
+  // published sizes so the share view can fill exactly the space between top bar, side panel and player bar
+  let barHeight = $state(0), sideWidth = $state(0);
+  $effect(() => { document.documentElement.style.setProperty('--topbar', `${barHeight}px`); });
+  $effect(() => { document.documentElement.style.setProperty('--sidebar', `${sideWidth}px`); });
+  // side panel: on mouse it peeks as the pointer nears the corner button, opens fully when close by or over
+  // the panel, and slides out when the pointer moves away; on touch only the button toggles it
+  let corner: HTMLElement, side: HTMLElement;
+  let prox = $state(0);
+  let lit = $derived(overChrome || panelOpen);
+  let chrome = $derived(lit ? 1 : near);
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
+    if (touch || !corner) return;
+    const r = corner.getBoundingClientRect();
+    const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+    prox = Math.min(1, Math.max(0, 1 - d / 220));
+    const p = side.getBoundingClientRect();
+    const overPanel = hoverOpen && e.clientX >= p.left - 8 && e.clientY >= p.top;
+    hoverOpen = d < 90 || overPanel;
     if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
   }
   function onscroll(e: Event) {
@@ -60,8 +82,9 @@
   }
 </script>
 
+<svelte:document onmouseleave={() => { prox = 0; hoverOpen = false; }} />
 <svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
-  onclick={(e) => { if (menu && !(e.target as Element).closest('.corner')) menu = false; }} />
+  onclick={(e) => { if (menu && !shareRight && !(e.target as Element).closest('.corner, .side, .panel')) menu = false; }} /> <!-- .panel: closing the share view with its chevron keeps the menu open -->
 
 <div class="scroll" {onscroll} bind:this={scroller}>
   <div class="grid m-{material}" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
@@ -75,7 +98,8 @@
   </div>
 </div>
 
-<div class="controls" class:hidden={!barShown} style:--near={near} style:pointer-events={barShown && near > 0.05 ? 'auto' : 'none'}>
+<div class="controls" role="toolbar" tabindex="-1" aria-label="Controls" class:hidden={!barShown} class:lit style:--chrome={chrome} style:pointer-events={barShown && chrome > 0.05 ? 'auto' : 'none'}
+  bind:clientHeight={barHeight} onpointerenter={() => (overChrome = true)} onpointerleave={() => (overChrome = false)}>
   {#if set === 'layout'}
     <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
     <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
@@ -90,19 +114,26 @@
     </span>
   {/if}
   <!-- corner selector: which set of controls the bar shows -->
-  <span class="corner">
-    <button class="menu" onclick={() => (menu = !menu)} aria-haspopup="menu" aria-expanded={menu} aria-label="Control sets">
+  <span class="corner" bind:this={corner}>
+    <button class="menu" class:down={panelOpen} style:--prox={prox.toFixed(2)} onclick={() => (menu = !menu)} aria-haspopup="menu" aria-expanded={menu} aria-label="Control sets">
       <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
       <span class="cur">{SETS[set]}</span>
     </button>
-    {#if menu}
-      <span class="drop" role="menu">
-        {#each Object.entries(SETS) as [key, label] (key)}
-          <button role="menuitem" class:on={set === key} onclick={() => { set = key as keyof typeof SETS; menu = false; }}>{label}</button>
-        {/each}
-      </span>
-    {/if}
   </span>
+</div>
+
+<!-- side panel: continues the top bar downward from its right end; hidden fully off-screen, peeks as the pointer
+     approaches the corner button, opens on hover nearby (mouse) or from the button (touch) -->
+<div class="side" class:open={panelOpen} class:hidden={!barShown} class:lit role="menu" aria-hidden={!panelOpen} bind:this={side} bind:clientWidth={sideWidth}
+  style:--chrome={chrome} style:transform={panelOpen ? 'translateX(0)' : `translateX(calc(100% - ${(prox * 12).toFixed(1)}px))`}
+  onpointerenter={() => (overChrome = true)} onpointerleave={() => (overChrome = false)}>
+  {#each Object.entries(SETS) as [key, label] (key)}
+    <button role="menuitem" tabindex={panelOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; if (shareRight) player.shareOpen = false; menu = false; }}>{label}</button>
+  {/each}
+  {#if session.admin}
+    <span class="rule"></span>
+    <button role="menuitem" tabindex={panelOpen ? 0 : -1} class:on={shareRight} onclick={() => { player.shareFrom = 'right'; player.shareOpen = !shareRight; menu = true; }}>Share</button>
+  {/if}
 </div>
 
 <style>
@@ -171,14 +202,18 @@
   .controls {
     /* sizes scale with the viewport between phone and desktop */
     --s: clamp(0.5px, 100vw / 1600, 1px);
-    position: fixed; top: 0; left: 0; right: 0; box-sizing: border-box;
-    display: flex; flex-wrap: wrap; justify-content: center; gap: calc(12 * var(--s)) calc(36 * var(--s));
+    /* one fixed height for every control set so switching never jumps; --bar-rows scales it (2, 3 …) later */
+    --bar-rows: 1;
+    position: fixed; top: 0; left: 0; right: 0; box-sizing: border-box; min-height: calc(96 * var(--s) * var(--bar-rows));
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; align-content: center;
+    gap: calc(12 * var(--s)) calc(36 * var(--s));
     color: #fff; font-size: calc(24 * var(--s));
-    padding: calc(28 * var(--s)) calc(20 * var(--s)); background: rgba(0, 0, 0, 0.6);
-    letter-spacing: .08em; text-transform: uppercase; opacity: var(--near, 1); transition: opacity 150ms; z-index: 2;
+    padding: calc(8 * var(--s)) calc(20 * var(--s)); background: rgba(0, 0, 0, 0.6);
+    letter-spacing: .08em; text-transform: uppercase; opacity: var(--chrome, 1); user-select: none;
+    transition: opacity 150ms, background 200ms; z-index: 2;
   }
-  .controls:hover { opacity: 1; background: rgba(0, 0, 0, 0.6); }
-  @media (hover: none) { .controls { opacity: 1; background: rgba(0, 0, 0, 0.6); } .controls.hidden { opacity: 0; pointer-events: none; } }
+  .controls.lit, .side.lit { background: rgba(0, 0, 0, 0.78); } /* a bit darker while hovered or the panel is open */
+  @media (hover: none), (pointer: coarse) { .controls { transition: opacity 450ms, background 200ms; } }
   .controls.hidden { opacity: 0; pointer-events: none; }
   .controls label { display: flex; align-items: center; gap: calc(16 * var(--s)); }
   /* look set: a row of labelled options */
@@ -189,14 +224,44 @@
   .controls .opt.on { opacity: 1; background: #fff; color: #000; border-color: #fff; }
   /* corner selector */
   .corner { position: absolute; right: calc(20 * var(--s)); top: 50%; transform: translateY(-50%); }
-  .controls .menu { all: unset; cursor: pointer; display: flex; align-items: center; gap: calc(8 * var(--s)); padding: calc(4 * var(--s)) calc(8 * var(--s)); opacity: .7; }
-  .controls .menu:hover { opacity: 1; }
+  /* corner button: subtle brushed-metal key. It lifts and brightens as the pointer approaches (--prox 0…1)
+     and sits pressed in while the panel is open */
+  .controls .menu {
+    all: unset; cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; gap: calc(8 * var(--s));
+    padding: calc(6 * var(--s)) calc(12 * var(--s)); border-radius: 4px; border: 1px solid #000;
+    background: linear-gradient(170deg, #3b3b3b, #232323 55%, #2b2b2b);
+    box-shadow: inset 0 1px 0 #ffffff26, inset 0 -1px 0 #00000090, 0 1px 2px #000b;
+    opacity: calc(0.6 + 0.4 * var(--prox, 0));
+    transform: translateY(calc(-1.5px * var(--prox, 0)));
+    transition: transform 160ms, box-shadow 160ms, background 160ms, opacity 160ms;
+  }
+  .controls .menu::after { /* light sweep that travels across as you get closer */
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(100deg, #fff0 30%, #ffffff1c 50%, #fff0 70%);
+    transform: translateX(calc(-120% + 240% * var(--prox, 0)));
+    transition: transform 160ms;
+  }
+  .controls .menu:hover { box-shadow: inset 0 1px 0 #ffffff33, inset 0 -1px 0 #00000090, 0 2px 4px #000c; }
+  .controls .menu.down {
+    background: linear-gradient(170deg, #1a1a1a, #262626);
+    box-shadow: inset 0 2px 4px #000d, inset 0 -1px 0 #ffffff12; transform: translateY(1px); opacity: 1;
+  }
+  .controls .menu.down::after { transform: translateX(120%); }
   .cur { font-size: .7em; opacity: .8; }
-  .drop { position: absolute; right: 0; top: 100%; margin-top: calc(6 * var(--s)); display: flex; flex-direction: column; min-width: 8em;
-    background: rgba(0, 0, 0, 0.85); border: 1px solid #fff2; border-radius: 4px; padding: calc(4 * var(--s)); }
-  .controls .drop button { all: unset; cursor: pointer; padding: calc(6 * var(--s)) calc(12 * var(--s)); border-radius: 3px; opacity: .7; }
-  .controls .drop button:hover { background: #ffffff14; opacity: 1; }
-  .controls .drop button.on { opacity: 1; }
+  .side {
+    --s: clamp(0.5px, 100vw / 1600, 1px);
+    position: fixed; top: var(--topbar, 0px); right: 0; bottom: 0; width: min(80vw, calc(340 * var(--s))); box-sizing: border-box;
+    display: flex; flex-direction: column; gap: calc(4 * var(--s)); padding: calc(16 * var(--s)) calc(20 * var(--s));
+    background: rgba(0, 0, 0, 0.6); z-index: 2; /* same tone and layer as the top bar, no border: one L-shaped surface */
+    color: #fff; font-size: calc(24 * var(--s)); letter-spacing: .08em; text-transform: uppercase; opacity: var(--chrome, 1); user-select: none;
+    pointer-events: none; transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 150ms, background 200ms;
+  }
+  .side.open { pointer-events: auto; }
+  .side.hidden { opacity: 0; }
+  .side button { all: unset; cursor: pointer; padding: calc(12 * var(--s)) calc(16 * var(--s)); border-radius: 3px; opacity: .7; }
+  .side button:hover { background: #ffffff14; opacity: 1; }
+  .side button.on { opacity: 1; background: #ffffff1c; }
+  .side .rule { height: 1px; background: #fff2; margin: calc(8 * var(--s)) calc(16 * var(--s)); }
   /* same thin slider in every browser; Firefox's default range is large */
   .controls input { appearance: none; width: calc(240 * var(--s)); height: calc(32 * var(--s)); margin: 0; background: none; cursor: pointer; }
   .controls input[type=checkbox] { width: calc(24 * var(--s)); height: calc(24 * var(--s)); border: 2px solid #fff9; border-radius: 50%; }
