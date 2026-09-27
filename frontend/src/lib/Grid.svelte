@@ -90,7 +90,7 @@
   <div class="grid m-{material}" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
     style:transform="translate3d({drift.current.x * -8}px, {drift.current.y * -6}px, 0)">
     {#each shown as t (t.id)}
-      <button class="tile" class:active={t.id === activeId} onclick={() => pick(t)} title="{t.title} — {t.sub}">
+      <button class="tile" class:active={t.id === activeId} onclick={() => pick(t)} aria-label="{t.title} — {t.sub}">
         <img src={t.cover} alt={t.title} loading="lazy" draggable="false" />
         <i></i>
       </button>
@@ -182,7 +182,8 @@
     box-shadow: 0 3px 5px -2px rgba(0, 0, 0, 0.8); /* light from top: shadow below only */
     transition: transform 200ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms;
   }
-  .tile img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; }
+  /* alt text stays for screen readers but is not painted in the browser's default style when a cover fails */
+  .tile img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; color: transparent; font-size: 0; }
   /* glossy vinyl-paper sleeve: paper grain, a broad laminate reflection with a faint second band,
      faint lit top-left edge and shaded bottom-right edge */
   .tile i { position: absolute; inset: 0; border-radius: inherit; pointer-events: none;

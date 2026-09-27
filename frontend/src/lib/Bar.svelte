@@ -26,20 +26,20 @@
       <span class="left"></span>
     {/if}
     {#if session.admin}
-      <button class="vis" onclick={() => { player.shareFrom = 'bottom'; player.shareOpen = !player.shareOpen; }} aria-label="Share" title="Share" aria-expanded={player.shareOpen}>
+      <button class="vis" onclick={() => { player.shareFrom = 'bottom'; player.shareOpen = !player.shareOpen; }} aria-label="Share" aria-expanded={player.shareOpen}>
         <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
         </svg>
       </button>
     {/if}
-    <button class="vis" onclick={() => (player.visOpen = true)} aria-label="Visualizer" title="Visualizer">
+    <button class="vis" onclick={() => (player.visOpen = true)} aria-label="Visualizer">
       <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M3 12h2l2-6 3 12 3-9 2 6 2-3h4" />
       </svg>
     </button>
     <span class="ctl">
       <span class="btns">
-        <button onclick={random} aria-label="Random songs" title="Random songs">
+        <button onclick={random} aria-label="Random songs">
           <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
           </svg>
