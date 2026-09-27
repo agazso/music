@@ -72,6 +72,9 @@
   let chrome = $derived(lit ? 1 : near);
   // pointer distance from the centre of the corner key
   function dist(e: MouseEvent) { const r = corner.getBoundingClientRect(); return Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); }
+  // the block from the key's left edge to the screen edge and from the top down to the key counts as on the key,
+  // so the screen corner itself (further from the key's centre than the hover radius) never reads as "away"
+  function atKey(e: MouseEvent) { const r = corner.getBoundingClientRect(); return e.clientX >= r.left - 8 && e.clientY <= r.bottom + 8; }
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
     if (touch || !corner) return;
@@ -79,7 +82,7 @@
     prox = Math.min(1, Math.max(0, 1 - d / 220));
     const p = side.getBoundingClientRect();
     const overPanel = hoverOpen && e.clientX >= p.left - 8 && e.clientY >= p.top;
-    const close = d < 90 || overPanel;
+    const close = d < 90 || atKey(e) || overPanel;
     if (!close) hoverMuted = false;
     hoverOpen = close && !hoverMuted;
     if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
@@ -94,7 +97,7 @@
 
 <!-- the pointer leaves the window when it is slammed into the screen corner (frameless window, second monitor):
      leaving near the corner key opens the panel or keeps it open, leaving anywhere else closes it -->
-<svelte:document onmouseleave={(e) => { prox = 0; hoverOpen = !touch && !!corner && dist(e) < 220 && !hoverMuted; }} />
+<svelte:document onmouseleave={(e) => { prox = 0; hoverOpen = !touch && !!corner && (dist(e) < 220 || atKey(e)) && !hoverMuted; }} />
 <svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
   onclick={(e) => { if (menu && !shareRight && !(e.target as Element).closest('.corner, .side, .panel')) menu = false; }} /> <!-- .panel: closing the share view with its chevron keeps the menu open -->
 
