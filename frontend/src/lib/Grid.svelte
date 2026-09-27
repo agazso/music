@@ -14,9 +14,9 @@
   let motion = $state(localStorage.getItem('motion') === '1'); // off by default
   // which set of controls the top bar shows, and the background material
   const SETS = { layout: 'Layout', look: 'Look', search: 'Search' } as const;
-  const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', cone: 'Cone', fabric: 'Fabric' } as const;
+  const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', fabric: 'Fabric' } as const;
   let set = $state((localStorage.getItem('set') as keyof typeof SETS) || 'layout');
-  let material = $state((localStorage.getItem('material') as keyof typeof MATERIALS) || 'vinyl');
+  let material = $state((Object.keys(MATERIALS).find((k) => k === localStorage.getItem('material')) as keyof typeof MATERIALS) ?? 'vinyl');
   $effect(() => {
     localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap));
     localStorage.setItem('art', art ? '1' : '0'); localStorage.setItem('motion', motion ? '1' : '0');
@@ -183,14 +183,6 @@
       repeating-linear-gradient(to right, #ffffff05 0 1px, #0000 1px 3px),
       var(--sheen),
       linear-gradient(#1c1c1c, #151515);
-  }
-  /* cone: soft matte ridges (rounded ripples), no hard lines */
-  .m-cone {
-    background:
-      var(--grain),
-      repeating-linear-gradient(to bottom, #ffffff09 0, #ffffff03 6px, #0000 12px, #00000040 20px, #0000 26px, #ffffff09 28px),
-      var(--sheen),
-      linear-gradient(#111, #0b0b0b);
   }
   /* fabric: fine crosshatch weave with a soft nap */
   .m-fabric {
