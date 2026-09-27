@@ -1,0 +1,65 @@
+name: desktop
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write   # publish the release
+jobs:
+  mac:
+    runs-on: macos-14   # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.5.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: '**/pnpm-lock.yaml' }
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm install --frozen-lockfile
+        working-directory: desktop
+      - run: pnpm navidrome && pnpm build:frontend
+        working-directory: desktop
+      # unsigned build: assemble the app, ad-hoc sign it (required on Apple Silicon), then package dmg + zip
+      - run: |
+          pnpm pack:mac:dir
+          codesign --force --deep --sign - "release/mac-arm64/Music.app"
+          pnpm pack:mac
+        working-directory: desktop
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Music-mac-arm64
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.5.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: '**/pnpm-lock.yaml' }
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm install --frozen-lockfile
+        working-directory: desktop
+      - run: pnpm dist   # navidrome + frontend + AppImage and deb
+        working-directory: desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Music-linux-x64
+          path: |
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+  # a tag push (v0.1.0 …) also publishes a GitHub release with every build attached and notes from the commits
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [mac, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: release, merge-multiple: true }
+      - run: gh release create "$GITHUB_REF_NAME" release/* --generate-notes
+        env: { GH_TOKEN: '${{ github.token }}', GH_REPO: '${{ github.repository }}' }

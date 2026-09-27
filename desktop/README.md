@@ -21,7 +21,8 @@ matching `build` targets in `package.json`.
 
 ## macOS
 
-Built on a GitHub Actions Apple Silicon runner by `.github/workflows/mac.yml` (run it manually from the
+Built on a GitHub Actions Apple Silicon runner by `.github/workflows/desktop.yml`, which also builds the Linux
+AppImage and deb and publishes a release on a `v*` tag (run it manually from the
 Actions tab, or push a `v*` tag). It produces an unsigned, ad-hoc-signed `Music-<version>-arm64.dmg`
 as a workflow artifact. On a Mac with the tooling installed, `pnpm dist:mac` does the same locally.
 Intel Macs need `--x64` and the `darwin_amd64` navidrome binary (`ND_ARCH=amd64 pnpm navidrome`).
