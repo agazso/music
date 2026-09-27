@@ -121,8 +121,8 @@
   .m-grille {
     background:
       var(--grain),
-      radial-gradient(circle at 50% 50%, #000 0 4.2px, #ffffff10 4.6px 5.2px, #0000 5.6px) 0 0 / 18px 31.2px,
-      radial-gradient(circle at 50% 50%, #000 0 4.2px, #ffffff10 4.6px 5.2px, #0000 5.6px) 9px 15.6px / 18px 31.2px,
+      radial-gradient(circle at 50% 50%, #000 0 2px, #ffffff10 2.3px 2.7px, #0000 3px) 0 0 / 9px 15.6px,
+      radial-gradient(circle at 50% 50%, #000 0 2px, #ffffff10 2.3px 2.7px, #0000 3px) 4.5px 7.8px / 9px 15.6px,
       repeating-linear-gradient(to right, #ffffff05 0 1px, #0000 1px 3px),
       var(--sheen),
       linear-gradient(#1c1c1c, #151515);
