@@ -55,6 +55,8 @@
   let shareRight = $derived(player.shareOpen && player.shareFrom === 'right');
   // top bar and side panel are one piece of chrome: same opacity, and hovering either lights both
   let overChrome = $state(false), hoverOpen = $state(false), menu = $state(false);
+  // after the key closes the panel, hover must not reopen it until the pointer has moved away
+  let hoverMuted = false;
   let panelOpen = $derived(menu || hoverOpen || shareRight);
   // never fade while the pointer rests on the top bar or side panel, or while the panel is open
   let barShown = $derived(shareRight || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
@@ -76,7 +78,9 @@
     prox = Math.min(1, Math.max(0, 1 - d / 220));
     const p = side.getBoundingClientRect();
     const overPanel = hoverOpen && e.clientX >= p.left - 8 && e.clientY >= p.top;
-    hoverOpen = d < 90 || overPanel;
+    const close = d < 90 || overPanel;
+    if (!close) hoverMuted = false;
+    hoverOpen = close && !hoverMuted;
     if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
   }
   function onscroll(e: Event) {
@@ -128,9 +132,10 @@
       {/each}
     </span>
   {/if}
-  <!-- corner selector: which set of controls the bar shows -->
+  <!-- corner selector: which set of controls the bar shows; while the panel is open for any reason (menu, hover, share)
+       a press closes it all, so the depressed key always works as a close key on touch -->
   <span class="corner" bind:this={corner}>
-    <button class="menu" class:down={panelOpen} style:--prox={prox.toFixed(2)} onclick={() => (menu = !menu)} aria-haspopup="menu" aria-expanded={menu} aria-label="Control sets">
+    <button class="menu" class:down={panelOpen} style:--prox={prox.toFixed(2)} onclick={() => { if (shareRight) player.shareOpen = false; menu = !panelOpen; hoverMuted = !menu; hoverOpen = false; }} aria-haspopup="menu" aria-expanded={panelOpen} aria-label="Control sets">
       <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
       <span class="cur">{SETS[set]}</span>
     </button>
