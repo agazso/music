@@ -13,7 +13,7 @@
   let art = $state(localStorage.getItem('art') !== '0');
   let motion = $state(localStorage.getItem('motion') === '1'); // off by default
   // which set of controls the top bar shows, and the background material
-  const SETS = { layout: 'Layout', look: 'Look' } as const;
+  const SETS = { layout: 'Layout', look: 'Look', search: 'Search' } as const;
   const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', cone: 'Cone', fabric: 'Fabric' } as const;
   let set = $state((localStorage.getItem('set') as keyof typeof SETS) || 'layout');
   let material = $state((localStorage.getItem('material') as keyof typeof MATERIALS) || 'vinyl');
@@ -24,7 +24,12 @@
   });
   // Navidrome >= 0.64 omits coverArt when no image exists, so an empty cover URL means no art
   // the playing album always shows, even without art, so it can be found and scrolled to
-  let shown = $derived(art ? tiles.filter((t) => t.cover || t.id === activeId) : tiles);
+  // search set: filter as you type over title and subtitle (artist name for albums)
+  let query = $state('');
+  let shown = $derived.by(() => {
+    const q = query.trim().toLowerCase();
+    return tiles.filter((t) => (!art || t.cover || t.id === activeId) && (!q || `${t.title} ${t.sub}`.toLowerCase().includes(q)));
+  });
 
   // when the playing album changes (random queue, next track), bring its cover into view
   let scroller: HTMLDivElement;
@@ -105,6 +110,16 @@
     <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
     <label><input type="checkbox" bind:checked={art} /> with art</label>
     <label><input type="checkbox" bind:checked={motion} /> motion</label>
+  {:else if set === 'search'}
+    <span class="find">
+      <input type="text" placeholder="search" bind:value={query} spellcheck="false" autocomplete="off" aria-label="Search"
+        onkeydown={(e) => { if (e.key === 'Escape') query = ''; }} {@attach (el) => el.focus()} />
+      {#if query}
+        <button class="clear" onclick={() => (query = '')} aria-label="Clear search">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      {/if}
+    </span>
   {:else}
     <span class="group" role="radiogroup" aria-label="Background">
       <span class="name">background</span>
@@ -223,6 +238,17 @@
   .controls .opt { all: unset; cursor: pointer; padding: calc(4 * var(--s)) calc(12 * var(--s)); border: 1px solid #fff5; border-radius: 3px; opacity: .6; }
   .controls .opt:hover { opacity: 1; }
   .controls .opt.on { opacity: 1; background: #fff; color: #000; border-color: #fff; }
+  /* search set: bare underlined field with a white caret; the clear key appears once there is text */
+  .find { position: relative; display: flex; align-items: center; }
+  .controls input[type=text] {
+    width: calc(420 * var(--s)); height: auto; padding: calc(6 * var(--s)) calc(36 * var(--s)) calc(6 * var(--s)) 0;
+    border: 0; border-bottom: 1px solid #fff6; border-radius: 0; background: none; color: #fff; caret-color: #fff;
+    font: inherit; letter-spacing: inherit; text-transform: none; outline: none; cursor: text; transition: border-color 150ms;
+  }
+  .controls input[type=text]:focus { border-bottom-color: #fff; }
+  .controls input[type=text]::placeholder { color: #fff6; text-transform: uppercase; }
+  .controls .clear { all: unset; cursor: pointer; position: absolute; right: 0; display: flex; padding: calc(6 * var(--s)); opacity: .6; }
+  .controls .clear:hover { opacity: 1; }
   /* corner selector */
   .corner { position: absolute; right: calc(20 * var(--s)); top: 50%; transform: translateY(-50%); }
   /* corner button: subtle brushed-metal key. It lifts and brightens as the pointer approaches (--prox 0…1)
