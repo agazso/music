@@ -3,7 +3,7 @@
   import { cubicOut } from 'svelte/easing';
   import QRCode from 'qrcode';
   import { player } from './player.svelte';
-  import { shareLink } from './share.svelte';
+  import { shareLink } from './sharing.svelte';
 
   // 'bottom': rises from the player bar and leaves it visible
   // 'right': slides in from the right and fills exactly the space between top bar, side panel and player bar
