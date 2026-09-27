@@ -70,11 +70,12 @@
   let prox = $state(0);
   let lit = $derived(overChrome || panelOpen);
   let chrome = $derived(lit ? 1 : near);
+  // pointer distance from the centre of the corner key
+  function dist(e: MouseEvent) { const r = corner.getBoundingClientRect(); return Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); }
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
     if (touch || !corner) return;
-    const r = corner.getBoundingClientRect();
-    const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+    const d = dist(e);
     prox = Math.min(1, Math.max(0, 1 - d / 220));
     const p = side.getBoundingClientRect();
     const overPanel = hoverOpen && e.clientX >= p.left - 8 && e.clientY >= p.top;
@@ -91,7 +92,9 @@
   }
 </script>
 
-<svelte:document onmouseleave={() => { prox = 0; hoverOpen = false; }} />
+<!-- the pointer leaves the window when it is slammed into the screen corner (frameless window, second monitor):
+     leaving near the corner key opens the panel or keeps it open, leaving anywhere else closes it -->
+<svelte:document onmouseleave={(e) => { prox = 0; hoverOpen = !touch && !!corner && dist(e) < 220 && !hoverMuted; }} />
 <svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
   onclick={(e) => { if (menu && !shareRight && !(e.target as Element).closest('.corner, .side, .panel')) menu = false; }} /> <!-- .panel: closing the share view with its chevron keeps the menu open -->
 
