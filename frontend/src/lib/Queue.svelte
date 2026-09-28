@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { fly } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
+  import Drawer from './Drawer.svelte';
   import { jump, player } from './player.svelte';
 
   let { onclose }: { onclose: () => void } = $props();
@@ -9,9 +8,8 @@
   const reveal = (el: HTMLElement, active: boolean) => { $effect(() => { if (active) el.scrollIntoView({ block: 'center' }); }); };
 </script>
 
-<div class="panel" transition:fly={{ y: 400, duration: 420, easing: cubicOut }}>
-  <!-- closing with the handle keeps the top bar hidden until the next interaction -->
-  <button class="handle" onclick={() => { onclose(); player.topHidden = true; }} aria-label="Close">⌄</button>
+<!-- closing with the handle keeps the top bar hidden until the next interaction -->
+<Drawer onclose={() => { onclose(); player.topHidden = true; }}>
   <div class="list">
     {#each player.queue as s, i (s.id)}
       <button class="song" class:current={i === player.index} onclick={() => jump(i)} use:reveal={i === player.index}>
@@ -21,22 +19,10 @@
       </button>
     {/each}
   </div>
-</div>
+</Drawer>
 
 <style>
-  .panel {
-    --s: clamp(0.85px, 100vw / 1600, 1.3px);
-    /* covers the whole viewport underneath the bottom bar, so it sits on the dark panel with no seam */
-    position: fixed; inset: 0; padding: 0 0 var(--botbar, 0px); box-sizing: border-box;
-    display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.85); color: #eee; z-index: 1;
-    font-size: calc(16 * var(--s));
-  }
-  .handle {
-    all: unset; cursor: pointer; align-self: center; padding: calc(6 * var(--s)) calc(28 * var(--s));
-    font-size: calc(32 * var(--s)); line-height: 1; color: #fff; opacity: .6;
-  }
-  .handle:hover { opacity: 1; }
-  .list { overflow-y: auto; padding: calc(8 * var(--s)) calc(24 * var(--s)) calc(24 * var(--s)); scrollbar-width: thin; scrollbar-color: #333 #0000; }
+  .list { font-size: calc(16 * var(--s)); overflow-y: auto; padding: calc(8 * var(--s)) calc(24 * var(--s)) calc(24 * var(--s)); scrollbar-width: thin; scrollbar-color: #333 #0000; }
   .song {
     all: unset; cursor: pointer; display: grid; grid-template-columns: calc(48 * var(--s)) 1fr auto; align-items: center; gap: calc(16 * var(--s));
     width: 100%; box-sizing: border-box; padding: calc(10 * var(--s)) calc(12 * var(--s)); border-radius: 2px; color: #bbb;
