@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { restore, session } from './lib/api.svelte';
-  import { library, MODES, pick, setMode } from './lib/library.svelte';
+  import { library, MODES, pick, setMode, watchScan } from './lib/library.svelte';
   import { next, player, prev, toggle } from './lib/player.svelte';
   import Bar from './lib/Bar.svelte';
   import Login from './lib/Login.svelte';
@@ -11,7 +11,7 @@
   let ready = $state(false), idle = $state(false), hint = $state(false);
   let idleTimer: ReturnType<typeof setTimeout>;
 
-  onMount(() => { restore().finally(() => (ready = true)); });
+  onMount(() => { restore().finally(() => (ready = true)); watchScan(); });
   $effect(() => { if (session.api) setMode('albums'); });
 
   // any pointer activity (mouse move, tap, touch scroll) shows the bars; they fade again after a pause

@@ -149,6 +149,8 @@
   </Side>
 </div>
 
+{#if library.scan.scanning}<div class="scan">indexing… {library.scan.count} songs</div>{/if}
+
 {#if player.view === 'settings'}<Settings bind:art bind:motion onclose={() => (player.view = '')} />{/if}
 
 <style>
@@ -227,6 +229,9 @@
   .controls.hidden { opacity: 0; pointer-events: none; }
   /* phones: the first row holds just the two corner keys, the controls sit in a second row below */
   @media (max-width: 700px) { .controls { padding-top: calc(104 * var(--s)); min-height: calc(192 * var(--s)); } }
+  /* scan progress while navidrome indexes the folder (first run, new files) */
+  .scan { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%); padding: 8px 16px; border-radius: 4px;
+    background: rgba(0, 0, 0, 0.7); color: #fff; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; z-index: 2; }
   .controls label { display: flex; align-items: center; gap: calc(16 * var(--s)); }
   /* look set: a row of labelled options */
   .group { display: flex; align-items: center; gap: calc(10 * var(--s)); }
