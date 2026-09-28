@@ -46,7 +46,21 @@ export async function setMode(mode: Mode, refresh = false) {
       }
       case 'playlists': library.tiles = (ok(await api.getPlaylists()).playlists.playlist ?? []).map(playlist); break;
     }
-  } finally { if (mine === req) library.loading = false; }
+  } finally { if (mine === req) { library.loading = false; warmCovers(); } }
+}
+
+// loads the cover thumbnails in grid order in the background, so scrolling or searching later never waits for
+// navidrome to resize one: the browser caches them for a year. Covers use Vary: Origin, so the request has to
+// look like the grid's <img>, which a fetch() would not. A new list restarts from its top, skipping what is done
+const warmed = new Set<string>();
+let warmGen = 0;
+const preload = (u: string) => new Promise<void>((r) => { const i = new Image(); i.onload = i.onerror = () => r(); i.src = u; });
+async function warmCovers() {
+  const gen = ++warmGen, todo = library.tiles.map((t) => t.cover).filter((u) => u && !warmed.has(u));
+  // ponytail: 4 in flight leaves the browser's per-host connections for the covers on screen
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (todo.length && gen === warmGen) { const u = todo.shift()!; await preload(u); warmed.add(u); }
+  }));
 }
 
 // navidrome starts its first scan ~2s after it answers ping, so a one-off check after login misses it; polling
