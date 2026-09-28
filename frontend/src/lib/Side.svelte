@@ -82,7 +82,13 @@
   .menu.down::after { transform: translateX(-120%); }
   .right .menu.down::after { transform: translateX(120%); }
   .cur { font-size: .7em; opacity: .8; }
-  @media (max-width: 700px) { .cur { display: none; } } /* phones: two labelled keys would crowd the bar's controls */
+  /* phones: the keys have the bar's first row to themselves, so they sit in its middle rather than the bar's,
+     and are bigger for thumbs; the right one shows only its icon */
+  @media (max-width: 700px) {
+    .corner { top: calc(48 * var(--s)); }
+    .menu { font-size: calc(36 * var(--s)); padding: calc(10 * var(--s)) calc(18 * var(--s)); }
+    .right .cur { display: none; }
+  }
   /* the panel lives inside the top bar, so it fades with it; same tone, no border: one L-shaped surface */
   .side {
     --s: clamp(0.5px, 100vw / 1600, 1px);
@@ -99,4 +105,9 @@
   .side :global(button:hover) { background: #ffffff14; opacity: 1; }
   .side :global(button.on) { opacity: 1; background: #ffffff1c; }
   .side :global(.rule) { height: 1px; background: #fff2; margin: calc(8 * var(--s)) calc(16 * var(--s)); }
+  /* phones: bigger type and roomier rows for thumbs */
+  @media (max-width: 700px) {
+    .side { width: min(80vw, calc(600 * var(--s))); font-size: calc(40 * var(--s)); gap: calc(8 * var(--s)); }
+    .side :global(button) { padding: calc(20 * var(--s)) calc(24 * var(--s)); }
+  }
 </style>

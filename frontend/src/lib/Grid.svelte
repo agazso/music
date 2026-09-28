@@ -34,25 +34,27 @@
   $effect(() => { library.visible = shown; });
 
   // when the playing album changes (random queue, next track), bring its cover into view
-  let scroller: HTMLDivElement;
+  // that scroll is not the user's: on touch it must not show or hide the top bar, so it is ignored until the next touch
+  let scroller: HTMLDivElement, autoScroll = false;
   $effect(() => {
     if (!activeId) return;
+    autoScroll = true;
     requestAnimationFrame(() => scroller?.querySelector('.tile.active')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   });
 
   // subtle whole-grid drift with the mouse; native scroll does the rest
   const drift = new Spring({ x: 0, y: 0 }, { stiffness: 0.05, damping: 0.5 });
   // top bar visibility. Mouse: 0 below the middle of the screen, 1 at the top edge.
-  // Touch: hidden by default; scrolling up fades it in, scrolling down fades it out.
+  // Touch: hidden by default; scrolling up shows it, and it stays until scrolling down or tapping an album.
   // media query first; a real touch event also switches to touch mode in case the query misreports
   const touchAtLoad = matchMedia('(hover: none), (pointer: coarse)').matches;
   let touch = $state(touchAtLoad);
   let near = $state(touchAtLoad ? 0 : 1);
   let lastTop = 0;
-  function ontouchstart() { if (!touch) { touch = true; near = 0; } }
+  function ontouchstart() { autoScroll = false; if (!touch) { touch = true; near = 0; } }
   // on touch, a tap while the bars are hidden only brings them back; it must not start a song
   let wasHidden = false;
-  function pick(t: Tile) { if (touch && wasHidden) return; onpick(t); }
+  function pick(t: Tile) { if (touch) near = 0; if (touch && wasHidden) return; onpick(t); }
   // the drawer view opened from the right menu, if any; it pins the menu open
   let rightView = $derived(player.viewFrom === 'right' ? player.view : '');
   // two corner keys with side panels: modes on the left, control sets (and share) on the right.
@@ -60,15 +62,18 @@
   let overChrome = $state(false);
   let leftMenu = $state(false), leftOpen = $state(false), rightMenu = $state(false), rightOpen = $state(false);
   let panelOpen = $derived(leftOpen || rightOpen);
-  // never fade while the pointer rests on the chrome, or while a panel is open
-  let barShown = $derived(!!rightView || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
-  // published sizes so the share view can fill exactly the space between top bar, side panel and player bar
+  // never fade while the pointer rests on the chrome (touch has no resting pointer, only a stale one), or while a panel is open;
+  // on touch idling never hides it, scrolling does
+  let barShown = $derived(!!rightView || overChrome || panelOpen || !((!touch && hidden) || player.queueOpen || (!touch && player.topHidden)));
+  // published sizes so a drawer can fill exactly the space between top bar, side panel and player bar.
+  // on touch the panel never takes space: the drawer spans the full width and the panel opens over it
   let barHeight = $state(0), sideWidth = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--topbar', `${barHeight}px`); });
-  $effect(() => { document.documentElement.style.setProperty('--sidebar', `${sideWidth}px`); });
+  $effect(() => { document.documentElement.style.setProperty('--sidebar', `${rightOpen && !touch ? sideWidth : 0}px`); });
   let lit = $derived(overChrome || panelOpen);
-  // a menu item opens its view beside the panel, or closes it when it is the one showing; the menu stays open either way
-  function open(view: 'share' | 'settings') { player.viewFrom = 'right'; player.view = rightView === view ? '' : view; rightMenu = true; }
+  // a menu item opens its view beside the panel, or closes it when it is the one showing. With a mouse the menu stays open;
+  // on touch it closes so the view gets the whole width
+  function open(view: 'share' | 'settings') { player.viewFrom = 'right'; player.view = rightView === view ? '' : view; rightMenu = !touch; }
   let chrome = $derived(lit ? 1 : near);
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
@@ -77,7 +82,7 @@
   function onscroll(e: Event) {
     if (!touch) return;
     const top = (e.currentTarget as HTMLElement).scrollTop;
-    if (Math.abs(top - lastTop) > 4) near = top < lastTop ? 1 : 0;
+    if (!autoScroll && Math.abs(top - lastTop) > 4) near = top < lastTop ? 1 : 0;
     lastTop = top;
   }
 </script>
@@ -102,7 +107,7 @@
 </div>
 
 <div class="controls" role="toolbar" tabindex="-1" aria-label="Controls" class:hidden={!barShown} class:lit style:--chrome={chrome} style:pointer-events={barShown && chrome > 0.05 ? 'auto' : 'none'}
-  bind:clientHeight={barHeight} onpointerenter={() => (overChrome = true)} onpointerleave={() => (overChrome = false)}>
+  bind:clientHeight={barHeight} onpointerenter={() => (overChrome = !touch)} onpointerleave={() => (overChrome = false)}>
   {#if set === 'layout'}
     <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
     <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
@@ -132,7 +137,7 @@
     {/each}
   </Side>
   <!-- right corner: which set of controls the bar shows, and the share and settings views -->
-  <Side side="right" label={SETS[set]} {touch} pinned={!!rightView} onunpin={() => (player.view = '')} bind:menu={rightMenu} bind:open={rightOpen} bind:width={sideWidth}>
+  <Side side="right" label={SETS[set]} {touch} pinned={!!rightView && !touch} onunpin={() => (player.view = '')} bind:menu={rightMenu} bind:open={rightOpen} bind:width={sideWidth}>
     {#each Object.entries(SETS) as [key, label] (key)}
       <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; player.view = ''; rightMenu = false; }}>{label}</button>
     {/each}
@@ -220,6 +225,8 @@
   .controls.lit { background: rgba(0, 0, 0, 0.78); } /* a bit darker while hovered or a panel is open */
   @media (hover: none), (pointer: coarse) { .controls { transition: opacity 450ms, background 200ms; } }
   .controls.hidden { opacity: 0; pointer-events: none; }
+  /* phones: the first row holds just the two corner keys, the controls sit in a second row below */
+  @media (max-width: 700px) { .controls { padding-top: calc(104 * var(--s)); min-height: calc(192 * var(--s)); } }
   .controls label { display: flex; align-items: center; gap: calc(16 * var(--s)); }
   /* look set: a row of labelled options */
   .group { display: flex; align-items: center; gap: calc(10 * var(--s)); }
