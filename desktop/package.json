@@ -1,7 +1,7 @@
 {
   "name": "music-desktop",
   "productName": "Music",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Navidrome and the music frontend packaged as one desktop app",
   "type": "module",
