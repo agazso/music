@@ -10,7 +10,8 @@
 </script>
 
 <div class="panel" class:right={from === 'right'} transition:fly={from === 'right' ? { x: 600, duration: 420, easing: cubicOut } : { y: 400, duration: 420, easing: cubicOut }}>
-  <button class="handle" onclick={onclose} aria-label={from === 'right' ? 'Back' : 'Close'}>{from === 'right' ? '›' : '⌄'}</button>
+  <!-- the whole strip along the edge closes the drawer; the chevron sits centred in it -->
+  <button class="handle" onclick={onclose} aria-label={from === 'right' ? 'Back' : 'Close'}><span>{from === 'right' ? '›' : '⌄'}</span></button>
   {@render children()}
 </div>
 
@@ -23,7 +24,12 @@
   }
   /* right variant: the bottom layout rotated — chevron on the right edge, centred, pointing right */
   .panel.right { inset: var(--topbar, 0px) var(--sidebar, 0px) var(--botbar, 0px) 0; padding: 0; flex-direction: row-reverse; }
-  .handle { all: unset; cursor: pointer; align-self: center; padding: calc(6 * var(--s)) calc(28 * var(--s)); font-size: calc(32 * var(--s)); line-height: 1; color: #fff; opacity: .6; }
-  .right .handle { padding: calc(28 * var(--s)) calc(10 * var(--s)); }
-  .handle:hover { opacity: 1; }
+  .handle {
+    all: unset; cursor: pointer; align-self: stretch; display: flex; align-items: center; justify-content: center;
+    padding: calc(6 * var(--s)) 0; font-size: calc(32 * var(--s)); line-height: 1; color: #fff; transition: background 250ms;
+  }
+  .right .handle { padding: 0 calc(10 * var(--s)); }
+  .handle span { opacity: .6; transition: opacity 250ms, text-shadow 250ms; }
+  .handle:hover, .handle:focus-visible { background: rgba(255, 255, 255, 0.04); }
+  .handle:hover span, .handle:focus-visible span { opacity: 1; text-shadow: 0 0 calc(12 * var(--s)) rgba(255, 255, 255, 0.6); }
 </style>
