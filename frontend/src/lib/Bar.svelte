@@ -1,6 +1,6 @@
 <script lang="ts">
   import { coverUrl, session } from './api.svelte';
-  import { player, playRandom, seek, toggle } from './player.svelte';
+  import { player, seek, toggle, toggleRandom } from './player.svelte';
   import { randomSong } from './library.svelte';
   import Queue from './Queue.svelte';
   import Share from './Share.svelte';
@@ -9,8 +9,8 @@
   let barHeight = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--botbar', `${barHeight}px`); });
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  // random mode: songs drawn from the albums the grid shows; pressing again draws afresh
-  const random = () => playRandom(randomSong);
+  // random mode on/off: songs drawn from the albums the grid shows
+  const random = () => toggleRandom(randomSong);
 </script>
 
 {#if session.api}

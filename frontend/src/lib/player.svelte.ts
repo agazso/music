@@ -24,16 +24,20 @@ audio.addEventListener('play', () => { player.playing = true; navigator.mediaSes
 audio.addEventListener('pause', () => { player.playing = false; navigator.mediaSession && (navigator.mediaSession.playbackState = 'paused'); });
 audio.addEventListener('ended', next);
 
+// normal mode plays the whole queue; random mode jumps to the chosen song only, the next one is drawn again
 export function play(queue: Child[], index = 0) {
-  player.queue = queue; player.index = index; player.random = false;
+  if (player.random) { if (!queue[index]) return; player.queue.push(queue[index]); player.index = player.queue.length - 1; }
+  else { player.queue = queue; player.index = index; }
   load();
 }
 
 // random mode: the queue is the history of picks and grows one song at a time as playback reaches its end;
 // `more` supplies the next pick (from whatever the grid shows), or nothing, and then playback simply stops
 let more: (() => Promise<Child | undefined>) | undefined;
-export function playRandom(pick: () => Promise<Child | undefined>) {
-  more = pick; player.queue = []; player.index = -1; player.random = true;
+export function toggleRandom(pick: () => Promise<Child | undefined>) {
+  player.random = !player.random;
+  if (!player.random) return; // the current song plays on; the history stays for prev
+  more = pick; player.queue = []; player.index = -1;
   next();
 }
 
