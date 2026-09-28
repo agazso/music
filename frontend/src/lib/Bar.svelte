@@ -11,7 +11,19 @@
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   // random mode on/off: songs drawn from the albums the grid shows
   const random = () => toggleRandom(randomSong);
+  // hot corner: the pointer pushed into the bottom-left screen corner opens the song list, which then stays until closed.
+  // mouse only, and only while the bar shows and a song is loaded, like the button it stands in for
+  const touch = matchMedia('(hover: none), (pointer: coarse)').matches;
+  function atCorner(e: MouseEvent, slack: number) { return !touch && !hidden && !!player.song && e.clientX <= slack && e.clientY >= innerHeight - slack; }
+  // only entering the corner opens it: a pointer resting there must not reopen the list the moment it is closed
+  // (Chrome sends a synthetic move when the layout under the pointer changes)
+  let inCorner = false;
+  function onmove(e: PointerEvent) { const now = atCorner(e, 2); if (now && !inCorner) player.queueOpen = true; inCorner = now; }
 </script>
+
+<!-- the pointer leaves a frameless window through the corner, so the leave event counts too, with more slack -->
+<svelte:window onpointermove={onmove} />
+<svelte:document onmouseleave={(e) => { if (atCorner(e, 24)) player.queueOpen = true; }} />
 
 {#if session.api}
   {#if player.queueOpen}<Queue onclose={() => (player.queueOpen = false)} />{/if}
@@ -67,10 +79,11 @@
   }
   .bar:hover, .bar.lit { background: rgba(0, 0, 0, 0.78); } /* darker while hovered or an overlay is open, like the panels */
   .bar.hidden:not(:hover) { opacity: 0; pointer-events: none; } /* stays visible while the mouse rests on it */
-  /* .bar .left outranks the generic .bar button reset below, so it keeps filling the middle */
+  /* .bar .left outranks the generic .bar button reset below, so it keeps filling the middle;
+     it reaches the screen edge so a click in the corner itself opens the list */
   .bar .left {
     all: unset; flex: 1; min-width: 0; display: flex; align-items: center; gap: calc(12 * var(--s));
-    align-self: stretch; padding: 0 calc(8 * var(--s)); margin-left: calc(-8 * var(--s)); border-radius: 3px;
+    align-self: stretch; padding: 0 calc(8 * var(--s)) 0 calc(16 * var(--s)); margin-left: calc(-16 * var(--s)); border-radius: 0 3px 3px 0;
     font-size: calc(20 * var(--s)); transition: background 150ms, opacity 100ms;
   }
   .bar button.left { cursor: pointer; }
