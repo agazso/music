@@ -14,7 +14,7 @@ chosen on first run and reused, so QR codes and bookmarks stay valid across rest
     pnpm dist               # all of the above, then AppImage and .deb into release/
 
 Data lives in the app's user-data folder (`~/.config/Music/navidrome` on Linux): the database, cache and
-`credentials.json` (admin and share passwords, ports). Delete that folder for a factory reset. `Ctrl+Q` quits.
+`credentials.json` (admin and share passwords, ports). Delete that folder for a factory reset. `Ctrl+Q` (`Cmd+Q` on macOS) quits.
 
 Linux x86_64 only for now; other platforms need their own navidrome binary in `fetch-navidrome.mjs` and
 matching `build` targets in `package.json`.
@@ -33,6 +33,11 @@ Opening an unsigned app, once per install, no admin tricks needed:
 - **macOS 15 Sequoia:** double-click, dismiss the "Apple could not verify" dialog, open
   *System Settings → Privacy & Security*, scroll down to the note about Music being blocked, click
   *Open Anyway*, confirm with your password.
+
+Updating: quit the running app first (`Cmd+Q`, or right-click its Dock icon → *Quit*), then drag the new
+`Music.app` onto `/Applications` and choose *Replace*. If the old app is still running, opening the new one
+just brings the old window back. Builds before 0.1.1 had no app menu, so `Cmd+Q` did nothing; quit those from the
+Dock or Activity Monitor.
 
 Signing and notarization need an Apple Developer account ($99/year); with a Developer ID certificate and an
 App Store Connect API key added as repository secrets, electron-builder handles both in the same workflow

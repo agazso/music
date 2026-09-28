@@ -70,7 +70,9 @@ async function waitFor(url) {
 let navidrome;
 
 app.whenReady().then(async () => {
-  Menu.setApplicationMenu(null);
+  // macOS takes Cmd+Q and the Dock/app-switcher quit from the app menu; without one the app can't be quit and a
+  // freshly installed version just re-activates the old process that is still running
+  Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }]) : null);
   const dataDir = path.join(app.getPath('userData'), 'navidrome');
   mkdirSync(dataDir, { recursive: true });
   const music = await musicDir();
@@ -100,7 +102,7 @@ app.whenReady().then(async () => {
     frame: false, show: false, backgroundColor: '#000',
     webPreferences: { preload: path.join(here, 'preload.cjs'), additionalArguments: [`--desktop=${JSON.stringify(desktop)}`] },
   });
-  win.webContents.on('before-input-event', (e, input) => { // Ctrl+Q quits; there is no window chrome
+  win.webContents.on('before-input-event', (e, input) => { // Ctrl+Q quits; there is no window chrome (Cmd+Q on macOS comes from the app menu)
     if (input.control && input.key.toLowerCase() === 'q') { e.preventDefault(); app.quit(); }
   });
   await waitFor(`${local}/rest/ping`);
