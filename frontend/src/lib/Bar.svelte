@@ -1,7 +1,7 @@
 <script lang="ts">
   import { coverUrl, session } from './api.svelte';
-  import { player, seek, setOrder, toggle, type Order } from './player.svelte';
-  import { randomSong } from './library.svelte';
+  import { jumpRandom, player, seek, setOrder, toggle, type Order } from './player.svelte';
+  import { grid } from './library.svelte';
   import Queue from './Queue.svelte';
   import Share from './Share.svelte';
   let { hidden }: { hidden: boolean } = $props();
@@ -10,7 +10,8 @@
   $effect(() => { document.documentElement.style.setProperty('--botbar', `${barHeight}px`); });
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   // random picks songs from the albums the grid shows
-  const ORDERS: Record<Order, string> = { normal: 'Normal', shuffle: 'Shuffle', random: 'Random' };
+  // icons after VLC's: an arrow into a stop bar for in order, crossing arrows for shuffle; a die for random, which VLC lacks
+  const ORDERS: Record<Order, string> = { normal: 'In order', shuffle: 'Shuffle album', random: 'Random from the grid' };
   // the bottom-right menu: share, visualizer and play order. It stays open until closed like the song list
   let menu = $state(false), key: HTMLElement, panel: HTMLElement;
   // hot corners: the pointer pushed into a bottom screen corner opens what that corner holds, which then stays until closed:
@@ -43,9 +44,19 @@
     {#if session.admin}<button role="menuitem" tabindex={menu ? 0 : -1} class:on={player.view === 'share'} onclick={share}>Share</button>{/if}
     <button role="menuitem" tabindex={menu ? 0 : -1} onclick={visualize}>Visualizer</button>
     <span class="rule"></span>
+    <!-- stays open after a jump, so it can be pressed again right away -->
+    <button role="menuitem" tabindex={menu ? 0 : -1} onclick={() => jumpRandom(grid)}>Shuffle</button>
     <span class="orders" role="radiogroup" aria-label="Play order">
       {#each Object.entries(ORDERS) as [o, label] (o)}
-        <button role="radio" tabindex={menu ? 0 : -1} aria-checked={player.order === o} class:on={player.order === o} onclick={() => setOrder(o as Order, randomSong)}>{label}</button>
+        <button role="radio" tabindex={menu ? 0 : -1} aria-checked={player.order === o} aria-label={label} title={label} class:on={player.order === o} onclick={() => setOrder(o as Order, grid)}>
+          <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            {#if o === 'normal'}<path d="M3 12h13M12 8l4 4-4 4M20 6v12" />
+            {:else if o === 'shuffle'}<path d="M3 7h2.5c5.5 0 7.5 10 13 10H21M3 17h2.5c2.3 0 3.9-1.8 5.2-4M13.3 11c1.3-2.2 2.9-4 5.2-4H21M18 4l3 3-3 3M18 14l3 3-3 3" />
+            {:else}<rect x="4" y="4" width="16" height="16" rx="3" />
+              {#each [[8.5, 8.5], [15.5, 8.5], [12, 12], [8.5, 15.5], [15.5, 15.5]] as [cx, cy] (`${cx}${cy}`)}<circle {cx} {cy} r="1.1" fill="currentColor" stroke="none" />{/each}
+            {/if}
+          </svg>
+        </button>
       {/each}
     </span>
   </div>
@@ -123,7 +134,7 @@
   .rule { height: 1px; background: #fff2; margin: calc(8 * var(--s)) calc(16 * var(--s)); }
   /* play order: one row of equal options, the chosen one solid like the top bar's */
   .orders { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(8 * var(--s)); padding: calc(4 * var(--s)) 0; }
-  .menu-panel .orders button { padding: calc(8 * var(--s)) 0; text-align: center; font-size: .7em; border: 1px solid #fff5; }
+  .menu-panel .orders button { display: flex; justify-content: center; padding: calc(8 * var(--s)) 0; border: 1px solid #fff5; }
   .menu-panel .orders button.on { background: #fff; color: #000; border-color: #fff; }
   @media (max-width: 700px) {
     .menu-panel { width: min(80vw, calc(600 * var(--s))); font-size: calc(40 * var(--s)); gap: calc(8 * var(--s)); }

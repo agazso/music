@@ -1,17 +1,18 @@
 import type { AlbumID3, ArtistID3, Child, Playlist } from 'subsonic-api';
 import { coverUrl, ok, session } from './api.svelte';
-import { play, player } from './player.svelte';
+import { play, type Grid } from './player.svelte';
 
-export type Tile = { id: string; cover: string; title: string; sub: string; kind: 'album' | 'artist' | 'playlist' };
+// count: songs behind the tile, for numbering the grid's songs (an artist counts as one, see grid())
+export type Tile = { id: string; cover: string; title: string; sub: string; kind: 'album' | 'artist' | 'playlist'; count: number };
 export const MODES = ['albums', 'recent', 'random', 'starred', 'artists', 'playlists'] as const;
 export type Mode = (typeof MODES)[number];
 
 // visible: what the grid shows after the search and art filters; random picks come from these
 export const library = $state({ mode: 'albums' as Mode, tiles: [] as Tile[], visible: [] as Tile[], loading: false, scan: { scanning: false, count: 0 } });
 
-const album = (a: AlbumID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: a.artist ?? '', kind: 'album' });
-const artist = (a: ArtistID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: 'artist', kind: 'artist' });
-const playlist = (p: Playlist): Tile => ({ id: p.id, cover: coverUrl(p.coverArt ?? `pl-${p.id}`), title: p.name, sub: 'playlist', kind: 'playlist' });
+const album = (a: AlbumID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: a.artist ?? '', kind: 'album', count: a.songCount ?? 1 });
+const artist = (a: ArtistID3): Tile => ({ id: a.id, cover: coverUrl(a.coverArt), title: a.name, sub: 'artist', kind: 'artist', count: 1 });
+const playlist = (p: Playlist): Tile => ({ id: p.id, cover: coverUrl(p.coverArt ?? `pl-${p.id}`), title: p.name, sub: 'playlist', kind: 'playlist', count: p.songCount ?? 1 });
 
 let req = 0; // ignore results from a superseded mode switch
 let listing = true; // false once an artist pick replaced the mode listing with that artist's albums
@@ -96,12 +97,23 @@ export async function pick(t: Tile) {
   library.tiles = (a.album ?? []).map(album);
 }
 
-// one song from one of the visible tiles, both drawn at random; nothing when the grid is empty.
-// ponytail: every tile weighs the same whatever its song count; a few retries dodge songs already heard
-export async function randomSong(): Promise<Child | undefined> {
-  if (!library.visible.length) return;
-  const heard = new Set(player.queue.map((s) => s.id));
-  let song: Child | undefined;
-  for (let i = 0; i < 5 && (!song || heard.has(song.id)); i++) song = rnd(await songsOf(rnd(library.visible))) ?? song;
-  return song;
+// the songs of the visible tiles numbered 0..count-1 in grid order, for random play: a running total of the tiles' song
+// counts turns a number into a tile and a track, so no song list is ever downloaded; the album loads when its song plays.
+// ponytail: an artist is one number (a random song of a random album of theirs); give it its song count if artist
+// grids get played at random a lot
+export function grid(): Grid {
+  const tiles = library.visible, cum = new Float64Array(tiles.length + 1);
+  tiles.forEach((t, i) => (cum[i + 1] = cum[i] + Math.max(1, t.count)));
+  return {
+    count: cum[tiles.length],
+    key: tiles.map((t) => t.id).join(),
+    find: (albumId) => { const i = tiles.findIndex((t) => t.kind === 'album' && t.id === albumId); return i < 0 ? -1 : cum[i]; },
+    async song(n) {
+      let lo = 0, hi = tiles.length - 1;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (cum[m + 1] <= n) lo = m + 1; else hi = m; }
+      const t = tiles[lo], songs = t && (await songsOf(t));
+      if (!songs?.length) return;
+      return t.kind === 'artist' ? rnd(songs) : songs[n - cum[lo]] ?? rnd(songs); // counts can be stale while a scan runs
+    },
+  };
 }

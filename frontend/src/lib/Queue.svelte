@@ -11,7 +11,7 @@
 <!-- closing with the handle keeps the top bar hidden until the next interaction -->
 <Drawer onclose={() => { onclose(); player.topHidden = true; }}>
   <div class="list">
-    {#each player.queue as s, i (s.id)}
+    {#each player.queue as s, i (`${i}:${s.id}`)}
       <button class="song" class:current={i === player.index} onclick={() => jump(i)} use:reveal={i === player.index}>
         <span class="n">{s.track ?? i + 1}</span>
         <span class="t">{s.title}<small>{s.artist}</small></span>
