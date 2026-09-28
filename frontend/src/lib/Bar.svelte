@@ -1,6 +1,6 @@
 <script lang="ts">
   import { coverUrl, session } from './api.svelte';
-  import { player, seek, toggle, toggleRandom } from './player.svelte';
+  import { player, seek, setOrder, toggle, type Order } from './player.svelte';
   import { randomSong } from './library.svelte';
   import Queue from './Queue.svelte';
   import Share from './Share.svelte';
@@ -9,26 +9,47 @@
   let barHeight = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--botbar', `${barHeight}px`); });
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  // random mode on/off: songs drawn from the albums the grid shows
-  const random = () => toggleRandom(randomSong);
-  // hot corner: the pointer pushed into the bottom-left screen corner opens the song list, which then stays until closed.
-  // mouse only, and only while the bar shows and a song is loaded, like the button it stands in for
+  // random picks songs from the albums the grid shows
+  const ORDERS: Record<Order, string> = { normal: 'Normal', shuffle: 'Shuffle', random: 'Random' };
+  // the bottom-right menu: share, visualizer and play order. It stays open until closed like the song list
+  let menu = $state(false), key: HTMLElement, panel: HTMLElement;
+  // hot corners: the pointer pushed into a bottom screen corner opens what that corner holds, which then stays until closed:
+  // the song list on the left (only with a song loaded, like the button it stands in for), the menu on the right.
+  // mouse only, and only while the bar shows
   const touch = matchMedia('(hover: none), (pointer: coarse)').matches;
-  function atCorner(e: MouseEvent, slack: number) { return !touch && !hidden && !!player.song && e.clientX <= slack && e.clientY >= innerHeight - slack; }
-  // only entering the corner opens it: a pointer resting there must not reopen the list the moment it is closed
+  function atCorner(e: MouseEvent, slack: number) {
+    if (touch || hidden || e.clientY < innerHeight - slack) return '';
+    return e.clientX <= slack ? (player.song ? 'left' : '') : e.clientX >= innerWidth - slack ? 'right' : '';
+  }
+  function openCorner(c: string) { if (c === 'left') player.queueOpen = true; if (c === 'right') menu = true; }
+  // only entering the corner opens it: a pointer resting there must not reopen it the moment it is closed
   // (Chrome sends a synthetic move when the layout under the pointer changes)
-  let inCorner = false;
-  function onmove(e: PointerEvent) { const now = atCorner(e, 2); if (now && !inCorner) player.queueOpen = true; inCorner = now; }
+  let inCorner = '';
+  function onmove(e: PointerEvent) { const now = atCorner(e, 2); if (now !== inCorner) openCorner(now); inCorner = now; }
+  function onclick(e: MouseEvent) { const t = e.target as Node; if (menu && !key?.contains(t) && !panel?.contains(t)) menu = false; }
+  // a menu item that opens a view hands the screen to it
+  function share() { player.viewFrom = 'bottom'; player.view = player.view === 'share' ? '' : 'share'; menu = false; }
+  function visualize() { player.visOpen = true; menu = false; }
 </script>
 
-<!-- the pointer leaves a frameless window through the corner, so the leave event counts too, with more slack -->
-<svelte:window onpointermove={onmove} />
-<svelte:document onmouseleave={(e) => { if (atCorner(e, 24)) player.queueOpen = true; }} />
+<!-- the pointer leaves a frameless window through a corner, so the leave event counts too, with more slack -->
+<svelte:window onpointermove={onmove} {onclick} />
+<svelte:document onmouseleave={(e) => openCorner(atCorner(e, 24))} />
 
 {#if session.api}
   {#if player.queueOpen}<Queue onclose={() => (player.queueOpen = false)} />{/if}
   {#if player.view === 'share'}<Share from={player.viewFrom} onclose={() => (player.view = '')} />{/if}
-  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.view} class:lit={player.queueOpen || !!player.view} bind:clientHeight={barHeight}>
+  <div class="menu-panel" class:open={menu} role="menu" aria-hidden={!menu} bind:this={panel}>
+    {#if session.admin}<button role="menuitem" tabindex={menu ? 0 : -1} class:on={player.view === 'share'} onclick={share}>Share</button>{/if}
+    <button role="menuitem" tabindex={menu ? 0 : -1} onclick={visualize}>Visualizer</button>
+    <span class="rule"></span>
+    <span class="orders" role="radiogroup" aria-label="Play order">
+      {#each Object.entries(ORDERS) as [o, label] (o)}
+        <button role="radio" tabindex={menu ? 0 : -1} aria-checked={player.order === o} class:on={player.order === o} onclick={() => setOrder(o as Order, randomSong)}>{label}</button>
+      {/each}
+    </span>
+  </div>
+  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.view && !menu} class:lit={player.queueOpen || !!player.view || menu} bind:clientHeight={barHeight}>
     {#if player.song}
       <!-- cover + title + artist: one control that opens the song list -->
       <button class="left" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
@@ -38,29 +59,16 @@
     {:else}
       <span class="left"></span>
     {/if}
-    {#if session.admin}
-      <button class="vis" onclick={() => { player.viewFrom = 'bottom'; player.view = player.view === 'share' ? '' : 'share'; }} aria-label="Share" aria-expanded={player.view === 'share'}>
-        <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-        </svg>
-      </button>
-    {/if}
-    <button class="vis" onclick={() => (player.visOpen = true)} aria-label="Visualizer">
-      <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M3 12h2l2-6 3 12 3-9 2 6 2-3h4" />
-      </svg>
-    </button>
     <span class="ctl">
       <span class="btns">
-        <button class:on={player.random} onclick={random} aria-label="Random songs" aria-pressed={player.random}>
-          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-          </svg>
-        </button>
         <button onclick={toggle} disabled={!player.song} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? '❚❚' : '▶'}</button>
       </span>
       <span class="time">{fmt(player.time)} / {fmt(player.duration)}</span>
     </span>
+    <!-- reaches the screen edge so a click in the corner itself opens the menu, like the song list on the left -->
+    <button class="key" class:down={menu} bind:this={key} onclick={() => (menu = !menu)} aria-haspopup="menu" aria-expanded={menu} aria-label="Menu">
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+    </button>
     <div class="progress" role="slider" tabindex="0" aria-label="Seek" aria-valuenow={player.time}
       onclick={(e) => seek(e.offsetX / e.currentTarget.clientWidth)}
       onkeydown={(e) => { if (e.key === 'ArrowLeft') seek((player.time - 10) / player.duration); if (e.key === 'ArrowRight') seek((player.time + 10) / player.duration); }}>
@@ -95,9 +103,32 @@
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
   .bar button:disabled { opacity: .3; cursor: default; }
-  .bar button.on { opacity: 1; text-shadow: 0 0 8px #fff9; } /* random mode is on */
-  .vis { all: unset; cursor: pointer; display: flex; padding: 4px 8px; opacity: .7; }
-  .vis:hover { opacity: 1; }
+  .bar .key {
+    display: flex; align-items: center; align-self: stretch; padding: 0 calc(16 * var(--s)) 0 calc(12 * var(--s)); margin-right: calc(-16 * var(--s));
+    border-radius: 3px 0 0 3px; opacity: .7; transition: background 150ms, opacity 100ms;
+  }
+  .bar .key:hover, .bar .key.down { opacity: 1; background: rgba(255, 255, 255, 0.06); }
+  /* the menu: same width, tone and type as the top-right panel, as tall as its items, sitting on the bar's right end */
+  .menu-panel {
+    --s: clamp(0.5px, 100vw / 1600, 1px);
+    position: fixed; right: 0; bottom: var(--botbar, 0px); width: min(80vw, calc(340 * var(--s))); box-sizing: border-box;
+    display: flex; flex-direction: column; gap: calc(4 * var(--s)); padding: calc(16 * var(--s)) calc(20 * var(--s));
+    background: rgba(0, 0, 0, 0.78); color: #fff; font-size: calc(24 * var(--s)); letter-spacing: .08em; text-transform: uppercase; user-select: none;
+    transform: translateX(100%); pointer-events: none; transition: transform 320ms cubic-bezier(.2,.8,.2,1); z-index: 2;
+  }
+  .menu-panel.open { transform: translateX(0); pointer-events: auto; }
+  .menu-panel button { all: unset; cursor: pointer; padding: calc(12 * var(--s)) calc(16 * var(--s)); border-radius: 3px; opacity: .7; }
+  .menu-panel button:hover { background: #ffffff14; opacity: 1; }
+  .menu-panel button.on { opacity: 1; background: #ffffff1c; }
+  .rule { height: 1px; background: #fff2; margin: calc(8 * var(--s)) calc(16 * var(--s)); }
+  /* play order: one row of equal options, the chosen one solid like the top bar's */
+  .orders { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(8 * var(--s)); padding: calc(4 * var(--s)) 0; }
+  .menu-panel .orders button { padding: calc(8 * var(--s)) 0; text-align: center; font-size: .7em; border: 1px solid #fff5; }
+  .menu-panel .orders button.on { background: #fff; color: #000; border-color: #fff; }
+  @media (max-width: 700px) {
+    .menu-panel { width: min(80vw, calc(600 * var(--s))); font-size: calc(40 * var(--s)); gap: calc(8 * var(--s)); }
+    .menu-panel button { padding: calc(20 * var(--s)) calc(24 * var(--s)); }
+  }
   .ctl { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; }
   .btns { display: flex; align-items: center; }
   .btns svg { display: block; }

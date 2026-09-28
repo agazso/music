@@ -2,7 +2,7 @@ import type { Child } from 'subsonic-api';
 import { coverUrl, session, streamUrl } from './api.svelte';
 
 export const player = $state({
-  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, random: false, queueOpen: false, topHidden: false, visOpen: false, view: '' as '' | 'share' | 'settings', viewFrom: 'bottom' as 'bottom' | 'right',
+  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, order: 'normal' as Order, queueOpen: false, topHidden: false, visOpen: false, view: '' as '' | 'share' | 'settings', viewFrom: 'bottom' as 'bottom' | 'right',
   get song() { return this.queue[this.index] as Child | undefined; },
 });
 
@@ -24,21 +24,38 @@ audio.addEventListener('play', () => { player.playing = true; navigator.mediaSes
 audio.addEventListener('pause', () => { player.playing = false; navigator.mediaSession && (navigator.mediaSession.playbackState = 'paused'); });
 audio.addEventListener('ended', next);
 
-// normal mode plays the whole queue; random mode jumps to the chosen song only, the next one is drawn again
+// normal: the album in order. shuffle: the chosen song, then the rest of the album in random order.
+// random: the queue is the history of picks and grows one song at a time as playback reaches its end;
+// `more` supplies the next pick (from whatever the grid shows), or nothing, and then playback simply stops
+export type Order = 'normal' | 'shuffle' | 'random';
+let ordered: Child[] = []; // the album as it came, so leaving shuffle can put it back in order
+let more: (() => Promise<Child | undefined>) | undefined;
+
+function shuffled<T>(a: T[]) {
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+  return b;
+}
+
 export function play(queue: Child[], index = 0) {
-  if (player.random) { if (!queue[index]) return; player.queue.push(queue[index]); player.index = player.queue.length - 1; }
-  else { player.queue = queue; player.index = index; }
+  if (player.order === 'random') { if (!queue[index]) return; player.queue.push(queue[index]); player.index = player.queue.length - 1; }
+  else {
+    ordered = queue;
+    if (player.order === 'shuffle') { player.queue = [queue[index], ...shuffled(queue.filter((_, i) => i !== index))]; player.index = 0; }
+    else { player.queue = queue; player.index = index; }
+  }
   load();
 }
 
-// random mode: the queue is the history of picks and grows one song at a time as playback reaches its end;
-// `more` supplies the next pick (from whatever the grid shows), or nothing, and then playback simply stops
-let more: (() => Promise<Child | undefined>) | undefined;
-export function toggleRandom(pick: () => Promise<Child | undefined>) {
-  player.random = !player.random;
-  if (!player.random) return; // the current song plays on; the history stays for prev
-  more = pick; player.queue = []; player.index = -1;
-  next();
+// the current song always plays on; only what comes after it changes
+export function setOrder(order: Order, pick: () => Promise<Child | undefined>) {
+  if (order === player.order) return;
+  const was = player.order, cur = player.song;
+  player.order = order;
+  if (order === 'random') { more = pick; player.queue = []; player.index = -1; next(); return; }
+  if (was === 'random') { ordered = player.queue.slice(); return; } // the history stays for prev
+  if (order === 'shuffle') player.queue = [...player.queue.slice(0, player.index + 1), ...shuffled(player.queue.slice(player.index + 1))];
+  else if (cur) { const i = ordered.findIndex((s) => s.id === cur.id); if (i >= 0) { player.queue = ordered; player.index = i; } }
 }
 
 function load() {
@@ -76,7 +93,7 @@ export function jump(i: number) { if (i >= 0 && i < player.queue.length) { playe
 export function toggle() { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
 export function next() {
   if (player.index < player.queue.length - 1) { player.index++; load(); }
-  else if (player.random) more?.().then((s) => { if (s) { player.queue.push(s); player.index++; load(); } else audio.pause(); }); // nothing to draw from: stop
+  else if (player.order === 'random') more?.().then((s) => { if (s) { player.queue.push(s); player.index++; load(); } else audio.pause(); }); // nothing to draw from: stop
 }
 export function prev() { if (audio.currentTime > 3 || player.index === 0) audio.currentTime = 0; else { player.index--; load(); } }
 export function seek(fraction: number) { if (player.duration) audio.currentTime = fraction * player.duration; }
