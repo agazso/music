@@ -2,6 +2,9 @@
   import { onMount } from 'svelte';
   import { audioGraph, player } from './player.svelte';
 
+  // background: behind the grid instead of fullscreen; no keys, no click to close, and half resolution so the
+  // grid keeps scrolling at full rate on top of it
+  let { background = false }: { background?: boolean } = $props();
   let canvas: HTMLCanvasElement;
   let host: HTMLDivElement;
   let error = $state('');
@@ -29,6 +32,7 @@
   }
   // Milkdrop keys: Space next (blend), H hard cut, Backspace previous, R toggle cycling, Scroll Lock lock, T song title
   function onkeydown(e: KeyboardEvent) {
+    if (background) return;
     if (e.key === ' ') next(2.7, true);
     else if (e.key === 'h' || e.key === 'H') next(0, true);
     else if (e.key === 'Backspace') prev();
@@ -44,7 +48,7 @@
     if (!document.createElement('canvas').getContext('webgl2')) { error = 'WebGL2 is not available in this browser'; return; }
     let raf = 0;
     const { ctx, node } = audioGraph();
-    const dpr = devicePixelRatio || 1;
+    const dpr = background ? 0.5 : devicePixelRatio || 1;
     const size = () => { canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr; vis?.setRendererSize(innerWidth * dpr, innerHeight * dpr); };
     size();
     // engine and presets are loaded only when the visualizer opens; they are heavy
@@ -61,8 +65,8 @@
     }).catch((e) => (error = String(e)));
     const ro = new ResizeObserver(size);
     ro.observe(host);
-    host.requestFullscreen?.().catch(() => {});
-    const onfs = () => { if (!document.fullscreenElement) player.visOpen = false; };
+    if (!background) host.requestFullscreen?.().catch(() => {});
+    const onfs = () => { if (!background && !document.fullscreenElement) player.visOpen = false; };
     document.addEventListener('fullscreenchange', onfs);
     return () => {
       cancelAnimationFrame(raf); clearInterval(cycleTimer); clearTimeout(nameTimer); ro.disconnect();
@@ -75,7 +79,7 @@
 
 <svelte:window {onkeydown} />
 
-<div class="vis" bind:this={host} onclick={() => (player.visOpen = false)} role="presentation">
+<div class="vis" class:bg={background} bind:this={host} onclick={() => { if (!background) player.visOpen = false; }} role="presentation">
   <canvas bind:this={canvas}></canvas>
   {#if name}<span class="name">{name}{#if !cycling} · locked{/if}</span>{/if}
   {#if error}<p>{error}</p>{/if}
@@ -83,6 +87,7 @@
 
 <style>
   .vis { position: fixed; inset: 0; background: #000; z-index: 3; cursor: none; }
+  .vis.bg { z-index: -1; cursor: auto; pointer-events: none; }
   canvas { width: 100%; height: 100%; display: block; }
   .name { position: absolute; left: 20px; bottom: 16px; color: #fff; opacity: .6; font-size: 12px; letter-spacing: .1em; text-shadow: 0 1px 4px #000; }
   p { position: absolute; inset: 0; margin: 0; display: grid; place-content: center; color: #888; font-size: 14px; }

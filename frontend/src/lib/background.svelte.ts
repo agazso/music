@@ -1,6 +1,6 @@
 import { blobFromText, deleteCustom, loadCustom, saveCustom } from './background';
 
-export const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', fabric: 'Fabric', custom: 'Custom' } as const;
+export const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', fabric: 'Fabric', custom: 'Custom', viz: 'Viz' } as const; // viz: the visualizer plays behind the grid
 export type Material = keyof typeof MATERIALS;
 
 // how the grid's background looks; every option is saved as it changes (device only, like the other settings)

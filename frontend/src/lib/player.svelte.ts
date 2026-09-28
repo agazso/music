@@ -45,6 +45,7 @@ function load() {
   const s = player.song;
   if (!s) return;
   scrobbled = false;
+  graph?.ctx.resume(); // a graph made without a gesture (viz background at start) is suspended, and would mute the element
   audio.src = streamUrl(s.id);
   audio.play().catch(() => {});
   session.api?.scrobble({ id: s.id, submission: false }).catch(() => {});

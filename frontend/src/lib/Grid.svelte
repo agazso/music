@@ -5,6 +5,7 @@
   import { session } from './api.svelte';
   import Side from './Side.svelte';
   import Settings from './Settings.svelte';
+  import Visualizer from './Visualizer.svelte';
   import { bg, importBackground, MATERIALS, randomBackground } from './background.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
@@ -90,6 +91,9 @@
 <!-- an image dropped anywhere becomes the custom background -->
 <svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
   ondragover={(e) => e.preventDefault()} ondrop={(e) => { e.preventDefault(); const f = e.dataTransfer?.files[0]; if (f) importBackground(f); }} />
+
+<!-- the visualizer as background sits behind everything; the fullscreen one replaces it while open -->
+{#if bg.material === 'viz' && !player.visOpen}<Visualizer background />{/if}
 
 <!-- the material sits on the cards' layer so it scrolls and drifts with them, or on the fixed viewport behind them -->
 <div class="scroll" class:fill={!bg.tile} class:m-vinyl={!bg.scroll && bg.material === 'vinyl'} class:m-grille={!bg.scroll && bg.material === 'grille'}
