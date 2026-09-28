@@ -5,7 +5,7 @@
   import { session } from './api.svelte';
   import Side from './Side.svelte';
   import Settings from './Settings.svelte';
-  import { bg, importBackground, MATERIALS } from './background.svelte';
+  import { bg, importBackground, MATERIALS, randomBackground } from './background.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -128,6 +128,7 @@
         <button class="opt" class:on={bg.material === key} role="radio" aria-checked={bg.material === key} disabled={key === 'custom' && !bg.custom}
           title={key === 'custom' && !bg.custom ? 'import one in settings' : undefined} onclick={() => (bg.material = key as keyof typeof MATERIALS)}>{label}</button>
       {/each}
+      <button class="opt" onclick={randomBackground} title="one of the bundled sample backgrounds">random</button>
     </span>
   {/if}
   <!-- left corner: which part of the library the grid shows -->

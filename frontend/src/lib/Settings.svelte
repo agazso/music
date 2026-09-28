@@ -1,7 +1,7 @@
 <script lang="ts">
   import Drawer from './Drawer.svelte';
   import { session } from './api.svelte';
-  import { bg, clearBackground, importBackground, randomBackground } from './background.svelte';
+  import { bg, clearBackground, importBackground } from './background.svelte';
 
   let { art = $bindable(), motion = $bindable(), onclose }: { art: boolean; motion: boolean; onclose: () => void } = $props();
   let paste = $state(''), bad = $state(false);
@@ -20,7 +20,6 @@
       <p class="import">
         <span class="k">custom background</span>
         <label class="btn"><input type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" onchange={(e) => { const f = e.currentTarget.files?.[0]; if (f) load(f); e.currentTarget.value = ''; }} />choose file</label>
-        <button class="btn" onclick={async () => { bad = !(await randomBackground()); }}>random</button>
         <input type="text" placeholder="or paste svg / css" bind:value={paste} spellcheck="false" onchange={() => paste.trim() && load(paste)} />
         {#if bg.custom}<button class="btn" onclick={clearBackground}>clear</button>{/if}
         {#if bad}<span class="err">not an svg, png or jpeg</span>{/if}
