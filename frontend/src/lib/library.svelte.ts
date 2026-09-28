@@ -64,16 +64,18 @@ async function warmCovers() {
 }
 
 // navidrome starts its first scan ~2s after it answers ping, so a one-off check after login misses it; polling
-// also catches the hourly rescans. Reload the current mode while scanning, and once more when it ends
-let wasScanning = false;
+// also catches the hourly rescans. The counter ticks every second; the list is reloaded every 5th tick while
+// scanning and once when it ends. A random pick is only redrawn while empty, so it does not reshuffle under the user
+let wasScanning = false, tick = 0;
 export function watchScan() {
   setInterval(async () => {
     if (!session.api) return;
     const s = ok(await session.api.getScanStatus()).scanStatus;
     library.scan = { scanning: s.scanning, count: s.count ?? 0 };
-    if (listing && (s.scanning || wasScanning)) setMode(library.mode, true);
+    const due = !s.scanning || tick++ % 5 === 0, still = library.mode === 'random' && library.tiles.length;
+    if (listing && (s.scanning || wasScanning) && due && !still) setMode(library.mode, true);
     wasScanning = s.scanning;
-  }, 5000);
+  }, 1000);
 }
 
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
