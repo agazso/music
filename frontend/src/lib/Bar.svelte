@@ -14,8 +14,8 @@
 
 {#if session.api}
   {#if player.queueOpen}<Queue onclose={() => (player.queueOpen = false)} />{/if}
-  {#if player.shareOpen}<Share from={player.shareFrom} onclose={() => (player.shareOpen = false)} />{/if}
-  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.shareOpen} class:lit={player.queueOpen || player.shareOpen} bind:clientHeight={barHeight}>
+  {#if player.view === 'share'}<Share from={player.viewFrom} onclose={() => (player.view = '')} />{/if}
+  <div class="bar" class:hidden={hidden && !player.queueOpen && !player.view} class:lit={player.queueOpen || !!player.view} bind:clientHeight={barHeight}>
     {#if player.song}
       <!-- cover + title + artist: one control that opens the song list -->
       <button class="left" onclick={() => (player.queueOpen = !player.queueOpen)} aria-label="Show songs" aria-expanded={player.queueOpen}>
@@ -26,7 +26,7 @@
       <span class="left"></span>
     {/if}
     {#if session.admin}
-      <button class="vis" onclick={() => { player.shareFrom = 'bottom'; player.shareOpen = !player.shareOpen; }} aria-label="Share" aria-expanded={player.shareOpen}>
+      <button class="vis" onclick={() => { player.viewFrom = 'bottom'; player.view = player.view === 'share' ? '' : 'share'; }} aria-label="Share" aria-expanded={player.view === 'share'}>
         <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
         </svg>

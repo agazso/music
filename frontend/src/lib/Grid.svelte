@@ -4,6 +4,7 @@
   import { player } from './player.svelte';
   import { session } from './api.svelte';
   import Side from './Side.svelte';
+  import Settings from './Settings.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -52,20 +53,22 @@
   // on touch, a tap while the bars are hidden only brings them back; it must not start a song
   let wasHidden = false;
   function pick(t: Tile) { if (touch && wasHidden) return; onpick(t); }
-  // hidden while idle, while the song list is open, or after closing it with the handle (mouse only)
-  let shareRight = $derived(player.shareOpen && player.shareFrom === 'right');
+  // the drawer view opened from the right menu, if any; it pins the menu open
+  let rightView = $derived(player.viewFrom === 'right' ? player.view : '');
   // two corner keys with side panels: modes on the left, control sets (and share) on the right.
   // top bar and side panels are one piece of chrome: same opacity, and hovering any of them lights all
   let overChrome = $state(false);
   let leftMenu = $state(false), leftOpen = $state(false), rightMenu = $state(false), rightOpen = $state(false);
   let panelOpen = $derived(leftOpen || rightOpen);
   // never fade while the pointer rests on the chrome, or while a panel is open
-  let barShown = $derived(shareRight || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
+  let barShown = $derived(!!rightView || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
   // published sizes so the share view can fill exactly the space between top bar, side panel and player bar
   let barHeight = $state(0), sideWidth = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--topbar', `${barHeight}px`); });
   $effect(() => { document.documentElement.style.setProperty('--sidebar', `${sideWidth}px`); });
   let lit = $derived(overChrome || panelOpen);
+  // a menu item opens its view beside the panel, or closes it when it is the one showing; the menu stays open either way
+  function open(view: 'share' | 'settings') { player.viewFrom = 'right'; player.view = rightView === view ? '' : view; rightMenu = true; }
   let chrome = $derived(lit ? 1 : near);
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
@@ -98,8 +101,6 @@
   {#if set === 'layout'}
     <label>columns <input type="range" min="1" max="10" bind:value={cols} /> {cols}</label>
     <label>gap <input type="range" min="0" max="160" bind:value={gap} /> {gap}</label>
-    <label><input type="checkbox" bind:checked={art} /> with art</label>
-    <label><input type="checkbox" bind:checked={motion} /> motion</label>
   {:else if set === 'search'}
     <span class="find">
       <input type="text" placeholder="search" bind:value={query} spellcheck="false" autocomplete="off" aria-label="Search"
@@ -124,17 +125,20 @@
       <button role="menuitem" tabindex={leftOpen ? 0 : -1} class:on={library.mode === m} onclick={() => { setMode(m); leftMenu = false; }}>{m}</button>
     {/each}
   </Side>
-  <!-- right corner: which set of controls the bar shows, and the share view -->
-  <Side side="right" label={SETS[set]} {touch} pinned={shareRight} onunpin={() => (player.shareOpen = false)} bind:menu={rightMenu} bind:open={rightOpen} bind:width={sideWidth}>
+  <!-- right corner: which set of controls the bar shows, and the share and settings views -->
+  <Side side="right" label={SETS[set]} {touch} pinned={!!rightView} onunpin={() => (player.view = '')} bind:menu={rightMenu} bind:open={rightOpen} bind:width={sideWidth}>
     {#each Object.entries(SETS) as [key, label] (key)}
-      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; if (shareRight) player.shareOpen = false; rightMenu = false; }}>{label}</button>
+      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; player.view = ''; rightMenu = false; }}>{label}</button>
     {/each}
+    <span class="rule"></span>
     {#if session.admin}
-      <span class="rule"></span>
-      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={shareRight} onclick={() => { player.shareFrom = 'right'; player.shareOpen = !shareRight; rightMenu = true; }}>Share</button>
+      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={rightView === 'share'} onclick={() => open('share')}>Share</button>
     {/if}
+    <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={rightView === 'settings'} onclick={() => open('settings')}>Settings</button>
   </Side>
 </div>
+
+{#if player.view === 'settings'}<Settings bind:art bind:motion onclose={() => (player.view = '')} />{/if}
 
 <style>
   .scroll { --u: calc(100vw / 3312); position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #333 #000; scrollbar-gutter: stable both-edges; }
@@ -228,8 +232,6 @@
   .controls .clear:hover { opacity: 1; }
   /* same thin slider in every browser; Firefox's default range is large */
   .controls input { appearance: none; width: calc(240 * var(--s)); height: calc(32 * var(--s)); margin: 0; background: none; cursor: pointer; }
-  .controls input[type=checkbox] { width: calc(24 * var(--s)); height: calc(24 * var(--s)); border: 2px solid #fff9; border-radius: 50%; }
-  .controls input[type=checkbox]:checked { background: #fff; }
   .controls input::-webkit-slider-runnable-track { height: 4px; background: #fff6; }
   .controls input::-moz-range-track { height: 4px; background: #fff6; }
   .controls input::-webkit-slider-thumb { appearance: none; width: calc(24 * var(--s)); height: calc(24 * var(--s));

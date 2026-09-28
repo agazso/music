@@ -24,7 +24,7 @@
     else if (e.key === ' ') { e.preventDefault(); toggle(); }
     else if (e.key === 'ArrowRight') next();
     else if (e.key === 'ArrowLeft') prev();
-    else if (e.key === 'Escape') { if (player.shareOpen) player.shareOpen = false; else if (player.queueOpen) player.queueOpen = false; else setMode(library.mode); }
+    else if (e.key === 'Escape') { if (player.view) player.view = ''; else if (player.queueOpen) player.queueOpen = false; else setMode(library.mode); }
     else if (e.key === '?') hint = !hint;
     else return;
     wake();
