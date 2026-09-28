@@ -15,6 +15,10 @@
       <h2>appearance</h2>
       <label><input type="checkbox" bind:checked={art} /> with art</label>
       <label><input type="checkbox" bind:checked={motion} /> motion</label>
+      {#if window.desktop}
+        <!-- the window reopens with or without the frame, which restarts playback -->
+        <label><input type="checkbox" checked={window.desktop.frame} onchange={(e) => window.desktop!.setFrame(e.currentTarget.checked)} /> native window frame</label>
+      {/if}
       <label><input type="checkbox" bind:checked={bg.scroll} /> background scrolls with the cards</label>
       <label><input type="checkbox" bind:checked={bg.tile} disabled={bg.material !== 'custom'} /> tile the custom background</label>
       <p class="import">

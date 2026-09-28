@@ -22,14 +22,16 @@ const freePort = () => new Promise((resolve) => {
 });
 
 // generated on first run and kept in the app's data folder: admin + share passwords and the two ports,
-// so QR codes and bookmarks stay valid across restarts
+// so QR codes and bookmarks stay valid across restarts; also the window frame choice
+const save = (dataDir, st) => writeFileSync(path.join(dataDir, 'credentials.json'), JSON.stringify(st), { mode: 0o600 });
 async function state(dataDir) {
   const file = path.join(dataDir, 'credentials.json');
   const st = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { username: 'admin', password: randomBytes(18).toString('base64url') };
   st.sharePassword ??= randomBytes(12).toString('base64url');
+  st.frame ??= true; // the OS's own title bar and window buttons
   if (!st.port || !(await isFree(st.port))) st.port = await freePort();
   if (!st.webPort || !(await isFree(st.webPort))) st.webPort = await freePort();
-  writeFileSync(file, JSON.stringify(st), { mode: 0o600 });
+  save(dataDir, st);
   return st;
 }
 
@@ -94,21 +96,34 @@ app.whenReady().then(async () => {
   navidrome.on('exit', (code) => { if (!app.isQuitting) { dialog.showErrorBox('Music', `Navidrome stopped (exit code ${code})`); app.quit(); } });
   serveFrontend(st.webPort);
 
-  const desktop = {
-    url: local, username: st.username, password: st.password,
-    share: { webPort: st.webPort, port: st.port, password: st.sharePassword },
-  };
-  const win = new BrowserWindow({
-    frame: false, show: false, backgroundColor: '#000',
-    webPreferences: { preload: path.join(here, 'preload.cjs'), additionalArguments: [`--desktop=${JSON.stringify(desktop)}`] },
-  });
-  win.webContents.on('before-input-event', (e, input) => { // Ctrl+Q quits; there is no window chrome (Cmd+Q on macOS comes from the app menu)
-    if (input.control && input.key.toLowerCase() === 'q') { e.preventDefault(); app.quit(); }
+  const page = `http://127.0.0.1:${st.webPort}/`;
+  // a frame can't be added to or removed from an open window, so the window is built anew for it
+  async function open(bounds, maximized) {
+    const desktop = {
+      url: local, username: st.username, password: st.password, frame: st.frame,
+      share: { webPort: st.webPort, port: st.port, password: st.sharePassword },
+    };
+    const win = new BrowserWindow({
+      frame: st.frame, show: false, backgroundColor: '#000', ...bounds,
+      webPreferences: { preload: path.join(here, 'preload.cjs'), additionalArguments: [`--desktop=${JSON.stringify(desktop)}`] },
+    });
+    win.webContents.on('before-input-event', (e, input) => { // Ctrl+Q quits, also without window chrome (Cmd+Q on macOS comes from the app menu)
+      if (input.control && input.key.toLowerCase() === 'q') { e.preventDefault(); app.quit(); }
+    });
+    await win.loadURL(page);
+    if (maximized) win.maximize();
+    win.show();
+    return win;
+  }
+  // the old window closes only once the new one shows, so the app never has no window (which would quit it)
+  ipcMain.handle('set-frame', async (e, on) => {
+    const old = BrowserWindow.fromWebContents(e.sender);
+    st.frame = !!on; save(dataDir, st);
+    await open(old.getNormalBounds(), old.isMaximized());
+    old.destroy();
   });
   await waitFor(`${local}/rest/ping`);
-  await win.loadURL(`http://127.0.0.1:${st.webPort}/`);
-  win.maximize();
-  win.show();
+  await open({}, true);
 });
 
 app.on('before-quit', () => { app.isQuitting = true; navidrome?.kill(); });
