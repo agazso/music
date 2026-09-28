@@ -1,7 +1,7 @@
 <script lang="ts">
   import Drawer from './Drawer.svelte';
+  import { session } from './api.svelte';
 
-  // ponytail: one section for now; add network etc. as sections below when there is something to put in them
   let { art = $bindable(), motion = $bindable(), onclose }: { art: boolean; motion: boolean; onclose: () => void } = $props();
 </script>
 
@@ -11,6 +11,10 @@
       <h2>appearance</h2>
       <label><input type="checkbox" bind:checked={art} /> with art</label>
       <label><input type="checkbox" bind:checked={motion} /> motion</label>
+    </section>
+    <section>
+      <h2>network</h2>
+      <p><span class="k">server</span> <span class="v">{session.base}</span></p>
     </section>
   </div>
 </Drawer>
@@ -26,4 +30,7 @@
   /* same round toggle as the top bar's */
   input { appearance: none; margin: 0; width: calc(24 * var(--s)); height: calc(24 * var(--s)); border: 2px solid #fff9; border-radius: 50%; cursor: pointer; }
   input:checked { background: #fff; }
+  p { margin: 0; padding: calc(10 * var(--s)) 0; display: flex; gap: calc(24 * var(--s)); }
+  .k { opacity: .5; }
+  .v { text-transform: none; letter-spacing: .02em; user-select: text; overflow-wrap: anywhere; }
 </style>
