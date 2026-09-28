@@ -1,8 +1,9 @@
 <script lang="ts">
   import { Spring } from 'svelte/motion';
-  import type { Tile } from './library.svelte';
+  import { library, MODES, setMode, type Tile } from './library.svelte';
   import { player } from './player.svelte';
   import { session } from './api.svelte';
+  import Side from './Side.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -53,38 +54,21 @@
   function pick(t: Tile) { if (touch && wasHidden) return; onpick(t); }
   // hidden while idle, while the song list is open, or after closing it with the handle (mouse only)
   let shareRight = $derived(player.shareOpen && player.shareFrom === 'right');
-  // top bar and side panel are one piece of chrome: same opacity, and hovering either lights both
-  let overChrome = $state(false), hoverOpen = $state(false), menu = $state(false);
-  // after the key closes the panel, hover must not reopen it until the pointer has moved away
-  let hoverMuted = false;
-  let panelOpen = $derived(menu || hoverOpen || shareRight);
-  // never fade while the pointer rests on the top bar or side panel, or while the panel is open
+  // two corner keys with side panels: modes on the left, control sets (and share) on the right.
+  // top bar and side panels are one piece of chrome: same opacity, and hovering any of them lights all
+  let overChrome = $state(false);
+  let leftMenu = $state(false), leftOpen = $state(false), rightMenu = $state(false), rightOpen = $state(false);
+  let panelOpen = $derived(leftOpen || rightOpen);
+  // never fade while the pointer rests on the chrome, or while a panel is open
   let barShown = $derived(shareRight || overChrome || panelOpen || !(hidden || player.queueOpen || (!touch && player.topHidden)));
   // published sizes so the share view can fill exactly the space between top bar, side panel and player bar
   let barHeight = $state(0), sideWidth = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--topbar', `${barHeight}px`); });
   $effect(() => { document.documentElement.style.setProperty('--sidebar', `${sideWidth}px`); });
-  // side panel: on mouse it peeks as the pointer nears the corner button, opens fully when close by or over
-  // the panel, and slides out when the pointer moves away; on touch only the button toggles it
-  let corner: HTMLElement, side: HTMLElement;
-  let prox = $state(0);
   let lit = $derived(overChrome || panelOpen);
   let chrome = $derived(lit ? 1 : near);
-  // pointer distance from the centre of the corner key
-  function dist(e: MouseEvent) { const r = corner.getBoundingClientRect(); return Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); }
-  // the block from the key's left edge to the screen edge and from the top down to the key counts as on the key,
-  // so the screen corner itself (further from the key's centre than the hover radius) never reads as "away"
-  function atKey(e: MouseEvent) { const r = corner.getBoundingClientRect(); return e.clientX >= r.left - 8 && e.clientY <= r.bottom + 8; }
   function onmove(e: PointerEvent) {
     drift.target = motion ? { x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 } : { x: 0, y: 0 };
-    if (touch || !corner) return;
-    const d = dist(e);
-    prox = Math.min(1, Math.max(0, 1 - d / 220));
-    const p = side.getBoundingClientRect();
-    const overPanel = hoverOpen && e.clientX >= p.left - 8 && e.clientY >= p.top;
-    const close = d < 90 || atKey(e) || overPanel;
-    if (!close) hoverMuted = false;
-    hoverOpen = close && !hoverMuted;
     if (!touch) near = Math.min(1, Math.max(0, 1 - e.clientY / (innerHeight / 2)));
   }
   function onscroll(e: Event) {
@@ -95,11 +79,7 @@
   }
 </script>
 
-<!-- the pointer leaves the window when it is slammed into the screen corner (frameless window, second monitor):
-     leaving near the corner key opens the panel or keeps it open, leaving anywhere else closes it -->
-<svelte:document onmouseleave={(e) => { prox = 0; hoverOpen = !touch && !!corner && (dist(e) < 220 || atKey(e)) && !hoverMuted; }} />
-<svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
-  onclick={(e) => { if (menu && !shareRight && !(e.target as Element).closest('.corner, .side, .panel')) menu = false; }} /> <!-- .panel: closing the share view with its chevron keeps the menu open -->
+<svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)} />
 
 <div class="scroll" {onscroll} bind:this={scroller}>
   <div class="grid m-{material}" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
@@ -138,28 +118,22 @@
       {/each}
     </span>
   {/if}
-  <!-- corner selector: which set of controls the bar shows; while the panel is open for any reason (menu, hover, share)
-       a press closes it all, so the depressed key always works as a close key on touch -->
-  <span class="corner" bind:this={corner}>
-    <button class="menu" class:down={panelOpen} style:--prox={prox.toFixed(2)} onclick={() => { if (shareRight) player.shareOpen = false; menu = !panelOpen; hoverMuted = !menu; hoverOpen = false; }} aria-haspopup="menu" aria-expanded={panelOpen} aria-label="Control sets">
-      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-      <span class="cur">{SETS[set]}</span>
-    </button>
-  </span>
-</div>
-
-<!-- side panel: continues the top bar downward from its right end; hidden fully off-screen, peeks as the pointer
-     approaches the corner button, opens on hover nearby (mouse) or from the button (touch) -->
-<div class="side" class:open={panelOpen} class:hidden={!barShown} class:lit role="menu" aria-hidden={!panelOpen} bind:this={side} bind:clientWidth={sideWidth}
-  style:--chrome={chrome} style:transform={panelOpen ? 'translateX(0)' : `translateX(calc(100% - ${(prox * 12).toFixed(1)}px))`}
-  onpointerenter={() => (overChrome = true)} onpointerleave={() => (overChrome = false)}>
-  {#each Object.entries(SETS) as [key, label] (key)}
-    <button role="menuitem" tabindex={panelOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; if (shareRight) player.shareOpen = false; menu = false; }}>{label}</button>
-  {/each}
-  {#if session.admin}
-    <span class="rule"></span>
-    <button role="menuitem" tabindex={panelOpen ? 0 : -1} class:on={shareRight} onclick={() => { player.shareFrom = 'right'; player.shareOpen = !shareRight; menu = true; }}>Share</button>
-  {/if}
+  <!-- left corner: which part of the library the grid shows -->
+  <Side side="left" label={library.mode} {touch} bind:menu={leftMenu} bind:open={leftOpen}>
+    {#each MODES as m (m)}
+      <button role="menuitem" tabindex={leftOpen ? 0 : -1} class:on={library.mode === m} onclick={() => { setMode(m); leftMenu = false; }}>{m}</button>
+    {/each}
+  </Side>
+  <!-- right corner: which set of controls the bar shows, and the share view -->
+  <Side side="right" label={SETS[set]} {touch} pinned={shareRight} onunpin={() => (player.shareOpen = false)} bind:menu={rightMenu} bind:open={rightOpen} bind:width={sideWidth}>
+    {#each Object.entries(SETS) as [key, label] (key)}
+      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={set === key} onclick={() => { set = key as keyof typeof SETS; if (shareRight) player.shareOpen = false; rightMenu = false; }}>{label}</button>
+    {/each}
+    {#if session.admin}
+      <span class="rule"></span>
+      <button role="menuitem" tabindex={rightOpen ? 0 : -1} class:on={shareRight} onclick={() => { player.shareFrom = 'right'; player.shareOpen = !shareRight; rightMenu = true; }}>Share</button>
+    {/if}
+  </Side>
 </div>
 
 <style>
@@ -231,7 +205,7 @@
     letter-spacing: .08em; text-transform: uppercase; opacity: var(--chrome, 1); user-select: none;
     transition: opacity 150ms, background 200ms; z-index: 2;
   }
-  .controls.lit, .side.lit { background: rgba(0, 0, 0, 0.78); } /* a bit darker while hovered or the panel is open */
+  .controls.lit { background: rgba(0, 0, 0, 0.78); } /* a bit darker while hovered or a panel is open */
   @media (hover: none), (pointer: coarse) { .controls { transition: opacity 450ms, background 200ms; } }
   .controls.hidden { opacity: 0; pointer-events: none; }
   .controls label { display: flex; align-items: center; gap: calc(16 * var(--s)); }
@@ -252,46 +226,6 @@
   .controls input[type=text]::placeholder { color: #fff6; text-transform: uppercase; }
   .controls .clear { all: unset; cursor: pointer; position: absolute; right: 0; display: flex; padding: calc(6 * var(--s)); opacity: .6; }
   .controls .clear:hover { opacity: 1; }
-  /* corner selector */
-  .corner { position: absolute; right: calc(20 * var(--s)); top: 50%; transform: translateY(-50%); }
-  /* corner button: subtle brushed-metal key. It lifts and brightens as the pointer approaches (--prox 0…1)
-     and sits pressed in while the panel is open */
-  .controls .menu {
-    all: unset; cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; gap: calc(8 * var(--s));
-    padding: calc(6 * var(--s)) calc(12 * var(--s)); border-radius: 4px; border: 1px solid #000;
-    background: linear-gradient(170deg, #3b3b3b, #232323 55%, #2b2b2b);
-    box-shadow: inset 0 1px 0 #ffffff26, inset 0 -1px 0 #00000090, 0 1px 2px #000b;
-    opacity: calc(0.6 + 0.4 * var(--prox, 0));
-    transform: translateY(calc(-1.5px * var(--prox, 0)));
-    transition: transform 160ms, box-shadow 160ms, background 160ms, opacity 160ms;
-  }
-  .controls .menu::after { /* light sweep that travels across as you get closer */
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(100deg, #fff0 30%, #ffffff1c 50%, #fff0 70%);
-    transform: translateX(calc(-120% + 240% * var(--prox, 0)));
-    transition: transform 160ms;
-  }
-  .controls .menu:hover { box-shadow: inset 0 1px 0 #ffffff33, inset 0 -1px 0 #00000090, 0 2px 4px #000c; }
-  .controls .menu.down {
-    background: linear-gradient(170deg, #1a1a1a, #262626);
-    box-shadow: inset 0 2px 4px #000d, inset 0 -1px 0 #ffffff12; transform: translateY(1px); opacity: 1;
-  }
-  .controls .menu.down::after { transform: translateX(120%); }
-  .cur { font-size: .7em; opacity: .8; }
-  .side {
-    --s: clamp(0.5px, 100vw / 1600, 1px);
-    position: fixed; top: var(--topbar, 0px); right: 0; bottom: 0; width: min(80vw, calc(340 * var(--s))); box-sizing: border-box;
-    display: flex; flex-direction: column; gap: calc(4 * var(--s)); padding: calc(16 * var(--s)) calc(20 * var(--s));
-    background: rgba(0, 0, 0, 0.6); z-index: 2; /* same tone and layer as the top bar, no border: one L-shaped surface */
-    color: #fff; font-size: calc(24 * var(--s)); letter-spacing: .08em; text-transform: uppercase; opacity: var(--chrome, 1); user-select: none;
-    pointer-events: none; transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 150ms, background 200ms;
-  }
-  .side.open { pointer-events: auto; }
-  .side.hidden { opacity: 0; }
-  .side button { all: unset; cursor: pointer; padding: calc(12 * var(--s)) calc(16 * var(--s)); border-radius: 3px; opacity: .7; }
-  .side button:hover { background: #ffffff14; opacity: 1; }
-  .side button.on { opacity: 1; background: #ffffff1c; }
-  .side .rule { height: 1px; background: #fff2; margin: calc(8 * var(--s)) calc(16 * var(--s)); }
   /* same thin slider in every browser; Firefox's default range is large */
   .controls input { appearance: none; width: calc(240 * var(--s)); height: calc(32 * var(--s)); margin: 0; background: none; cursor: pointer; }
   .controls input[type=checkbox] { width: calc(24 * var(--s)); height: calc(24 * var(--s)); border: 2px solid #fff9; border-radius: 50%; }
