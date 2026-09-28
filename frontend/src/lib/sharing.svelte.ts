@@ -27,7 +27,9 @@ export async function shareLink() {
   localStorage.setItem('share.password', password);
 
   const ip = d ? await window.desktop!.lanIp() : '';
-  const page = d ? `http://${ip}:${d.webPort}/` : location.origin + location.pathname;
-  const server = d ? `http://${ip}:${d.port}` : base;
+  // in the browser, localhost is swapped for the LAN address vite saw when it started
+  const lan = (u: string) => u.replace(/\/\/(localhost|127\.0\.0\.1|\[::1\])(?=[:/]|$)/, `//${__LAN_IP__}`);
+  const page = d ? `http://${ip}:${d.webPort}/` : lan(location.origin + location.pathname);
+  const server = d ? `http://${ip}:${d.port}` : lan(base);
   return `${page}#u=${USER}&p=${encodeURIComponent(password)}&s=${encodeURIComponent(server)}`;
 }

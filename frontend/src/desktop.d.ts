@@ -7,3 +7,6 @@ interface Window {
     lanIp: () => Promise<string>;
   };
 }
+
+// the dev machine's LAN address, from vite.config.ts
+declare const __LAN_IP__: string;
