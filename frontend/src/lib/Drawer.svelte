@@ -29,7 +29,11 @@
     padding: calc(6 * var(--s)) 0; font-size: calc(32 * var(--s)); line-height: 1; color: #fff; transition: background 250ms;
   }
   .right .handle { padding: 0 calc(10 * var(--s)); }
-  .handle span { opacity: .6; transition: opacity 250ms, text-shadow 250ms; }
+  .handle span { opacity: .6; transition: opacity 250ms, text-shadow 250ms, transform 250ms; }
   .handle:hover, .handle:focus-visible { background: rgba(255, 255, 255, 0.04); }
-  .handle:hover span, .handle:focus-visible span { opacity: 1; text-shadow: 0 0 calc(12 * var(--s)) rgba(255, 255, 255, 0.6); }
+  /* the chevron swells and gets a tight bright halo plus a wide soft one */
+  .handle:hover span, .handle:focus-visible span {
+    opacity: 1; font-weight: 700; transform: scale(1.15);
+    text-shadow: 0 0 calc(4 * var(--s)) rgba(255, 255, 255, 0.9), 0 0 calc(20 * var(--s)) rgba(255, 255, 255, 0.5);
+  }
 </style>
