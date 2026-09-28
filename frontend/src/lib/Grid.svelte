@@ -5,6 +5,7 @@
   import { session } from './api.svelte';
   import Side from './Side.svelte';
   import Settings from './Settings.svelte';
+  import { bg, importBackground, MATERIALS } from './background.svelte';
 
   let { tiles, onpick, activeId, hidden }: { tiles: Tile[]; onpick: (t: Tile) => void; activeId?: string; hidden: boolean } = $props();
 
@@ -14,15 +15,13 @@
   let gap = $state(Number(localStorage.getItem('grid.gap') ?? 48));
   let art = $state(localStorage.getItem('art') !== '0');
   let motion = $state(localStorage.getItem('motion') === '1'); // off by default
-  // which set of controls the top bar shows, and the background material
+  // which set of controls the top bar shows
   const SETS = { layout: 'Layout', look: 'Look', search: 'Search' } as const;
-  const MATERIALS = { vinyl: 'Vinyl', grille: 'Grille', fabric: 'Fabric' } as const;
   let set = $state((localStorage.getItem('set') as keyof typeof SETS) || 'layout');
-  let material = $state((Object.keys(MATERIALS).find((k) => k === localStorage.getItem('material')) as keyof typeof MATERIALS) ?? 'vinyl');
   $effect(() => {
     localStorage.setItem('grid.cols', String(cols)); localStorage.setItem('grid.gap', String(gap));
     localStorage.setItem('art', art ? '1' : '0'); localStorage.setItem('motion', motion ? '1' : '0');
-    localStorage.setItem('set', set); localStorage.setItem('material', material);
+    localStorage.setItem('set', set);
   });
   // Navidrome >= 0.64 omits coverArt when no image exists, so an empty cover URL means no art
   // the playing album always shows, even without art, so it can be found and scrolled to
@@ -82,10 +81,15 @@
   }
 </script>
 
-<svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)} />
+<!-- an image dropped anywhere becomes the custom background -->
+<svelte:window onpointermove={onmove} {ontouchstart} onpointerdowncapture={() => (wasHidden = hidden)}
+  ondragover={(e) => e.preventDefault()} ondrop={(e) => { e.preventDefault(); const f = e.dataTransfer?.files[0]; if (f) importBackground(f); }} />
 
-<div class="scroll" {onscroll} bind:this={scroller}>
-  <div class="grid m-{material}" style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
+<!-- the material sits on the cards' layer so it scrolls and drifts with them, or on the fixed viewport behind them -->
+<div class="scroll" class:fill={!bg.tile} class:m-vinyl={!bg.scroll && bg.material === 'vinyl'} class:m-grille={!bg.scroll && bg.material === 'grille'}
+  class:m-fabric={!bg.scroll && bg.material === 'fabric'} class:m-custom={!bg.scroll && bg.material === 'custom'} style:--custom={bg.custom ? `url("${bg.custom}")` : 'none'} {onscroll} bind:this={scroller}>
+  <div class="grid" class:m-vinyl={bg.scroll && bg.material === 'vinyl'} class:m-grille={bg.scroll && bg.material === 'grille'}
+    class:m-fabric={bg.scroll && bg.material === 'fabric'} class:m-custom={bg.scroll && bg.material === 'custom'} style:--cols={cols} style:--gap="max(0.2px, calc({gap} * var(--u)))"
     style:transform="translate3d({drift.current.x * -8}px, {drift.current.y * -6}px, 0)">
     {#each shown as t (t.id)}
       <button class="tile" class:active={t.id === activeId} onclick={() => pick(t)} aria-label="{t.title} — {t.sub}">
@@ -115,7 +119,8 @@
     <span class="group" role="radiogroup" aria-label="Background">
       <span class="name">background</span>
       {#each Object.entries(MATERIALS) as [key, label] (key)}
-        <button class="opt" class:on={material === key} role="radio" aria-checked={material === key} onclick={() => (material = key as keyof typeof MATERIALS)}>{label}</button>
+        <button class="opt" class:on={bg.material === key} role="radio" aria-checked={bg.material === key} disabled={key === 'custom' && !bg.custom}
+          title={key === 'custom' && !bg.custom ? 'import one in settings' : undefined} onclick={() => (bg.material = key as keyof typeof MATERIALS)}>{label}</button>
       {/each}
     </span>
   {/if}
@@ -141,15 +146,17 @@
 {#if player.view === 'settings'}<Settings bind:art bind:motion onclose={() => (player.view = '')} />{/if}
 
 <style>
-  .scroll { --u: calc(100vw / 3312); position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #333 #000; scrollbar-gutter: stable both-edges; }
-  .grid {
-    display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: var(--gap);
-    padding: var(--gap) var(--gap) 140px; min-height: 100%; box-sizing: border-box; will-change: transform;
-    /* materials scroll and drift with the cards; each is grain + a structure + the same two diagonal light bands */
+  .scroll {
+    --u: calc(100vw / 3312); position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #333 #000; scrollbar-gutter: stable both-edges;
+    /* built-in materials: each is grain + a structure + the same two diagonal light bands */
     --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
     --sheen: repeating-linear-gradient(105deg, #fff0 0, #ffffff0a 160px, #ffffff16 270px, #ffffff0a 380px, #fff0 520px,
         #fff0 780px, #ffffff0a 920px, #ffffff16 1030px, #ffffff0a 1140px, #fff0 1300px, #fff0 1400px);
   }
+  .grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: var(--gap); padding: var(--gap) var(--gap) 140px; min-height: 100%; box-sizing: border-box; will-change: transform; }
+  /* custom: the imported image as authored, repeated at its own size or stretched to cover */
+  .m-custom { background: var(--custom) center / auto repeat #000; }
+  .fill .m-custom, .fill.m-custom { background-size: cover; background-repeat: no-repeat; }
   /* vinyl: pressed hairline grooves */
   .m-vinyl { background: var(--grain), repeating-linear-gradient(to bottom, #fff0 0 2px, #00000033 2px 3px, #ffffff06 3px 4px), var(--sheen); }
   /* grille: perforated gunmetal, staggered round holes with a lit top edge, brushed base */
@@ -218,6 +225,7 @@
   .name { margin-right: calc(8 * var(--s)); opacity: .7; }
   .controls .opt { all: unset; cursor: pointer; padding: calc(4 * var(--s)) calc(12 * var(--s)); border: 1px solid #fff5; border-radius: 3px; opacity: .6; }
   .controls .opt:hover { opacity: 1; }
+  .controls .opt:disabled { opacity: .25; cursor: default; }
   .controls .opt.on { opacity: 1; background: #fff; color: #000; border-color: #fff; }
   /* search set: bare underlined field with a white caret; the clear key appears once there is text */
   .find { position: relative; display: flex; align-items: center; }
