@@ -31,6 +31,7 @@
     const q = query.trim().toLowerCase();
     return tiles.filter((t) => (!art || t.cover || t.id === activeId) && (!q || `${t.title} ${t.sub}`.toLowerCase().includes(q)));
   });
+  $effect(() => { library.visible = shown; });
 
   // when the playing album changes (random queue, next track), bring its cover into view
   let scroller: HTMLDivElement;

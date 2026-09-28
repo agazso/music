@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { coverUrl, ok, session } from './api.svelte';
-  import { play, player, seek, toggle } from './player.svelte';
+  import { coverUrl, session } from './api.svelte';
+  import { player, playRandom, seek, toggle } from './player.svelte';
+  import { randomSong } from './library.svelte';
   import Queue from './Queue.svelte';
   import Share from './Share.svelte';
   let { hidden }: { hidden: boolean } = $props();
@@ -8,8 +9,8 @@
   let barHeight = $state(0);
   $effect(() => { document.documentElement.style.setProperty('--botbar', `${barHeight}px`); });
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  // a fresh random queue of 50 songs; pressing again reshuffles
-  async function random() { play(ok(await session.api!.getRandomSongs({ size: 50 })).randomSongs.song ?? []); }
+  // random mode: songs drawn from the albums the grid shows; pressing again draws afresh
+  const random = () => playRandom(randomSong);
 </script>
 
 {#if session.api}
@@ -39,7 +40,7 @@
     </button>
     <span class="ctl">
       <span class="btns">
-        <button onclick={random} aria-label="Random songs">
+        <button class:on={player.random} onclick={random} aria-label="Random songs" aria-pressed={player.random}>
           <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
           </svg>
@@ -81,6 +82,7 @@
   .meta span { opacity: .7; margin-left: 8px; }
   .bar button { all: unset; cursor: pointer; font-size: calc(20 * var(--s)); padding: 4px 12px; opacity: .9; }
   .bar button:disabled { opacity: .3; cursor: default; }
+  .bar button.on { opacity: 1; text-shadow: 0 0 8px #fff9; } /* random mode is on */
   .vis { all: unset; cursor: pointer; display: flex; padding: 4px 8px; opacity: .7; }
   .vis:hover { opacity: 1; }
   .ctl { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; }

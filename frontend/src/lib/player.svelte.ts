@@ -2,7 +2,7 @@ import type { Child } from 'subsonic-api';
 import { coverUrl, session, streamUrl } from './api.svelte';
 
 export const player = $state({
-  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, queueOpen: false, topHidden: false, visOpen: false, view: '' as '' | 'share' | 'settings', viewFrom: 'bottom' as 'bottom' | 'right',
+  queue: [] as Child[], index: -1, playing: false, time: 0, duration: 0, random: false, queueOpen: false, topHidden: false, visOpen: false, view: '' as '' | 'share' | 'settings', viewFrom: 'bottom' as 'bottom' | 'right',
   get song() { return this.queue[this.index] as Child | undefined; },
 });
 
@@ -25,8 +25,16 @@ audio.addEventListener('pause', () => { player.playing = false; navigator.mediaS
 audio.addEventListener('ended', next);
 
 export function play(queue: Child[], index = 0) {
-  player.queue = queue; player.index = index;
+  player.queue = queue; player.index = index; player.random = false;
   load();
+}
+
+// random mode: the queue is the history of picks and grows one song at a time as playback reaches its end;
+// `more` supplies the next pick (from whatever the grid shows), or nothing, and then playback simply stops
+let more: (() => Promise<Child | undefined>) | undefined;
+export function playRandom(pick: () => Promise<Child | undefined>) {
+  more = pick; player.queue = []; player.index = -1; player.random = true;
+  next();
 }
 
 function load() {
@@ -61,7 +69,10 @@ export function audioGraph() {
 
 export function jump(i: number) { if (i >= 0 && i < player.queue.length) { player.index = i; load(); } }
 export function toggle() { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
-export function next() { if (player.index < player.queue.length - 1) { player.index++; load(); } }
+export function next() {
+  if (player.index < player.queue.length - 1) { player.index++; load(); }
+  else if (player.random) more?.().then((s) => { if (s) { player.queue.push(s); player.index++; load(); } else audio.pause(); }); // nothing to draw from: stop
+}
 export function prev() { if (audio.currentTime > 3 || player.index === 0) audio.currentTime = 0; else { player.index--; load(); } }
 export function seek(fraction: number) { if (player.duration) audio.currentTime = fraction * player.duration; }
 
