@@ -232,8 +232,6 @@
   .controls.lit { background: rgba(0, 0, 0, 0.78); } /* a bit darker while hovered or a panel is open */
   @media (hover: none), (pointer: coarse) { .controls { transition: opacity 450ms, background 200ms; } }
   .controls.hidden { opacity: 0; pointer-events: none; }
-  /* phones: the first row holds just the two corner keys, the controls sit in a second row below */
-  @media (max-width: 700px) { .controls { padding-top: calc(104 * var(--s)); min-height: calc(192 * var(--s)); } }
   /* scan progress while navidrome indexes the folder (first run, new files) */
   .scan { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%); padding: 8px 16px; border-radius: 4px;
     background: rgba(0, 0, 0, 0.7); color: #fff; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; z-index: 2; }
@@ -263,4 +261,13 @@
   .controls input::-webkit-slider-thumb { appearance: none; width: calc(24 * var(--s)); height: calc(24 * var(--s));
     margin-top: calc(2px - 12 * var(--s)); border-radius: 50%; background: #fff; }
   .controls input::-moz-range-thumb { width: calc(24 * var(--s)); height: calc(24 * var(--s)); border: 0; border-radius: 50%; background: #fff; }
+  /* phones: the first row holds just the two corner keys, the controls sit in rows below. Every row is one bar unit
+     (96): each control is --h tall with the rest of the unit between rows, so controls that don't fit add a whole unit */
+  @media (max-width: 700px) {
+    .controls { --h: calc(44 * var(--s)); --row-gap: calc(96 * var(--s) - var(--h));
+      padding: calc(96 * var(--s) + var(--row-gap) / 2) calc(20 * var(--s)) calc(var(--row-gap) / 2); row-gap: var(--row-gap); }
+    .controls label, .find, .group > * { height: var(--h); box-sizing: border-box; }
+    .group { flex-wrap: wrap; justify-content: center; row-gap: var(--row-gap); }
+    .controls .opt { display: flex; align-items: center; height: var(--h); box-sizing: border-box; } /* its all: unset drops the rule above */
+  }
 </style>
